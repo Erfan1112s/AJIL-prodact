@@ -9,9 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "mysql2": "^3.24.4",
     "next": "16.3.6",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
