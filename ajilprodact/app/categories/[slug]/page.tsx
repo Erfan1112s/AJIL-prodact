@@ -2,11 +2,12 @@
 // نمایش محصولات یک دسته خاص
 
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCategoryBySlug } from '@/lib/queries/categories';
 import { getProductsByCategory } from '@/lib/queries/products';
+import ProductCard from '@/components/ProductCard';
+import Container from '@/components/Container';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,6 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-// متادیتای داینامیک بر اساس دسته
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const category = await getCategoryBySlug(slug);
@@ -31,90 +31,97 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function formatPrice(price: number): string {
-  return price.toLocaleString('fa-IR');
-}
-
 export default async function CategoryProductsPage({ params }: Props) {
   const { slug } = await params;
 
-  // گرفتن دسته
   const category = await getCategoryBySlug(slug);
   if (!category) notFound();
 
-  // گرفتن محصولات این دسته
   const products = await getProductsByCategory(category.id, 50);
 
   return (
     <main className="min-h-screen">
-      <div className="bg-zinc-50 border-b border-zinc-200">
-        <div className="max-w-5xl mx-auto px-6 py-3 text-sm text-zinc-600">
-          <Link href="/" className="hover:text-brand-600">
+      <div className="bg-ink-50 border-b border-ink-200">
+        <Container className="py-3 text-sm text-ink-600">
+          <Link href="/" className="hover:text-brand-700 transition-colors">
             خانه
           </Link>
-          <span className="mx-2">/</span>
-          <Link href="/categories" className="hover:text-brand-600">
+          <span className="mx-2 text-ink-400">/</span>
+          <Link
+            href="/categories"
+            className="hover:text-brand-700 transition-colors"
+          >
             دسته‌بندی‌ها
           </Link>
-          <span className="mx-2">/</span>
-          <span className="text-zinc-900">{category.name}</span>
-        </div>
+          <span className="mx-2 text-ink-400">/</span>
+          <span className="text-ink-900">{category.name}</span>
+        </Container>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold mb-2">{category.name}</h1>
-        {category.description && (
-          <p className="text-zinc-600 text-sm mb-6">
-            {category.description}
-          </p>
-        )}
+      <section className="bg-gradient-to-b from-brand-50/50 to-white border-b border-ink-100">
+        <Container className="py-10 sm:py-12">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center text-2xl font-bold shrink-0 shadow-lg shadow-brand-600/20">
+              {category.name.charAt(0)}
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-ink-900 mb-1">
+                {category.name}
+              </h1>
+              <p className="text-xs text-ink-500 fa-num">
+                {products.length.toLocaleString('fa-IR')} محصول در این دسته
+              </p>
+            </div>
+          </div>
 
+          {category.description && (
+            <p className="text-sm text-ink-600 max-w-2xl leading-7 mt-4">
+              {category.description}
+            </p>
+          )}
+        </Container>
+      </section>
+
+      <Container className="py-10">
         {products.length === 0 ? (
-          <p className="text-zinc-500">
-            محصولی در این دسته ثبت نشده است.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map((product) => (
-              <Link
-                key={product.id}
-                href={`/products/${product.slug}`}
-                className="border border-zinc-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+          <div className="text-center py-16">
+            <div className="w-16 h-16 rounded-full bg-ink-100 mx-auto mb-4 flex items-center justify-center">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                className="text-ink-400"
               >
-                <div className="aspect-square bg-zinc-100 relative">
-                  {product.primary_image ? (
-                    <Image
-                      src={product.primary_image.url}
-                      alt={product.primary_image.alt ?? product.name}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-zinc-400 text-sm">
-                      بدون تصویر
-                    </div>
-                  )}
-                </div>
-                <div className="p-3">
-                  <h3 className="font-semibold text-sm mb-1 line-clamp-2">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-baseline justify-between mt-2">
-                    <span className="text-xs text-zinc-500">شروع از</span>
-                    <span className="font-bold text-brand-700 fa-num">
-                      {formatPrice(product.min_price)}
-                      <span className="text-xs font-normal mr-1">
-                        تومان
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              </Link>
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-5-5L5 21" />
+              </svg>
+            </div>
+            <p className="text-ink-500 mb-4">
+              محصولی در این دسته ثبت نشده است.
+            </p>
+            <Link
+              href="/products"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors"
+            >
+              مشاهده همه محصولات
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {products.map((product, index) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                priority={index < 4}
+              />
             ))}
           </div>
         )}
-      </div>
+      </Container>
     </main>
   );
 }
