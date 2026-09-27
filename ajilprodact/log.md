@@ -7,3 +7,6 @@
 
 - روشی که برای انتقال انتخاب کردم :‌ اول روی گیت هاب push کنم و بعد روی هسات pull
 
+# کامند های اتصال به دیتابیس :
+
+- mariadb -u db-username -p pas db-name < db/schema.sql
