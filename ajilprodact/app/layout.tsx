@@ -1,7 +1,9 @@
-// src/app/layout.tsx
+// app/layout.tsx
 import type { Metadata, Viewport } from 'next';
 import { Vazirmatn } from 'next/font/google';
 import './globals.css';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 const vazirmatn = Vazirmatn({
   subsets: ['arabic'],
@@ -28,10 +30,7 @@ export const metadata: Metadata = {
     locale: 'fa_IR',
     siteName: 'کاتالوگ آجیل',
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -46,8 +45,15 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
-      <body className="font-sans antialiased bg-white text-zinc-900">
-        {children}
+      <body className="font-sans antialiased bg-white text-ink-900 min-h-screen flex flex-col">
+        {/* هدر سراسری */}
+        <Header />
+
+        {/* محتوای اصلی */}
+        <div className="flex-1">{children}</div>
+
+        {/* فوتر سراسری */}
+        <Footer />
       </body>
     </html>
   );
