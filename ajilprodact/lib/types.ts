@@ -2,13 +2,13 @@
 // تایپ‌های TypeScript متناظر با جدول‌های دیتابیس
 // نام‌گذاری: هر تایپ به Row ختم می‌شود اگر مستقیماً یک ردیف جدول باشد
 
+import type { RowDataPacket } from 'mysql2';
+
 // ==========================================
 // بخش 1: تایپ‌های پایه (هر کدام یک ردیف جدول)
 // ==========================================
 
-// ردیف جدول categories
-// TINYINT(1) در mysql2 به صورت number برمی‌گردد: 0 یا 1
-export interface CategoryRow {
+export interface CategoryRow extends RowDataPacket {
   id: number;
   name: string;
   slug: string;
@@ -21,9 +21,7 @@ export interface CategoryRow {
   updated_at: Date;
 }
 
-// ردیف جدول products
-// DECIMAL با تنظیم decimalNumbers به number تبدیل می‌شود
-export interface ProductRow {
+export interface ProductRow extends RowDataPacket {
   id: number;
   name: string;
   slug: string;
@@ -39,8 +37,7 @@ export interface ProductRow {
   updated_at: Date;
 }
 
-// ردیف جدول product_variants
-export interface ProductVariantRow {
+export interface ProductVariantRow extends RowDataPacket {
   id: number;
   product_id: number;
   weight_gram: number;
@@ -52,8 +49,7 @@ export interface ProductVariantRow {
   updated_at: Date;
 }
 
-// ردیف جدول product_images
-export interface ProductImageRow {
+export interface ProductImageRow extends RowDataPacket {
   id: number;
   product_id: number;
   url: string;
@@ -63,8 +59,7 @@ export interface ProductImageRow {
   created_at: Date;
 }
 
-// ردیف جدول batches
-export interface BatchRow {
+export interface BatchRow extends RowDataPacket {
   id: number;
   batch_code: string;
   product_id: number;
@@ -80,8 +75,7 @@ export interface BatchRow {
   updated_at: Date;
 }
 
-// ردیف جدول branches
-export interface BranchRow {
+export interface BranchRow extends RowDataPacket {
   id: number;
   name: string;
   slug: string;
@@ -94,8 +88,7 @@ export interface BranchRow {
   updated_at: Date;
 }
 
-// ردیف جدول branch_inventory
-export interface BranchInventoryRow {
+export interface BranchInventoryRow extends RowDataPacket {
   id: number;
   branch_id: number;
   variant_id: number;
@@ -104,9 +97,7 @@ export interface BranchInventoryRow {
   updated_at: Date;
 }
 
-// ردیف جدول customers
-// توجه: admin_note در queries به کلاینت عمومی نمی‌رود
-export interface CustomerRow {
+export interface CustomerRow extends RowDataPacket {
   id: number;
   phone: string;
   full_name: string | null;
@@ -120,8 +111,7 @@ export interface CustomerRow {
   updated_at: Date;
 }
 
-// ردیف جدول orders
-export interface OrderRow {
+export interface OrderRow extends RowDataPacket {
   id: number;
   order_number: string;
   customer_id: number | null;
@@ -140,8 +130,7 @@ export interface OrderRow {
   updated_at: Date;
 }
 
-// ردیف جدول order_items
-export interface OrderItemRow {
+export interface OrderItemRow extends RowDataPacket {
   id: number;
   order_id: number;
   product_id: number;
@@ -154,23 +143,33 @@ export interface OrderItemRow {
 }
 
 // ==========================================
-// بخش 2: تایپ‌های ترکیبی (برای خروجی کوئری‌های پیچیده)
+// بخش 2: تایپ‌های ترکیبی (شکل خروجی، نه ردیف خام)
+// این‌ها به db.query پاس داده نمی‌شوند، پس نیازی به RowDataPacket ندارند
 // ==========================================
 
-// دسته‌بندی با فرزندانش (برای منوی درختی)
-export interface CategoryWithChildren extends CategoryRow {
-  children: CategoryWithChildren[];
-}
-
-// خلاصه دسته‌بندی (فقط فیلدهای لازم برای نمایش در کارت محصول)
+// خلاصه دسته‌بندی (شکل خروجی برای کارت محصول)
 export interface CategorySummary {
   id: number;
   name: string;
   slug: string;
 }
 
-// محصول با اطلاعات خلاصه
-// این تایپ برای کارت محصول در لیست استفاده می‌شود
+// دسته‌بندی با فرزندانش (برای منوی درختی)
+export interface CategoryWithChildren {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  image_url: string | null;
+  parent_id: number | null;
+  sort_order: number;
+  is_active: number;
+  created_at: Date;
+  updated_at: Date;
+  children: CategoryWithChildren[];
+}
+
+// محصول با اطلاعات خلاصه (برای کارت محصول در لیست)
 export interface ProductListItem {
   id: number;
   name: string;
@@ -183,8 +182,7 @@ export interface ProductListItem {
   is_featured: number;
 }
 
-// محصول کامل با همه جزئیات
-// برای صفحه تک محصول استفاده می‌شود
+// محصول کامل با همه جزئیات (برای صفحه تک محصول)
 export interface ProductDetail {
   id: number;
   name: string;
@@ -199,7 +197,7 @@ export interface ProductDetail {
   latest_batch: BatchRow | null;
 }
 
-// موجودی یک واریانت در یک شعبه
+// موجودی یک واریانت در یک شعبه (شکل خروجی)
 export interface VariantBranchStock {
   branch_id: number;
   branch_name: string;
@@ -209,4 +207,43 @@ export interface VariantBranchStock {
   stock: number;
   reserved: number;
   available: number;
+}
+
+// ==========================================
+// بخش 3: تایپ‌های کمکی برای کوئری‌های تجمیعی
+// این‌ها فقط به db.query پاس داده می‌شوند، پس RowDataPacket هستند
+// ==========================================
+
+// نتیجه COUNT(*)
+export interface CountResult extends RowDataPacket {
+  count: number;
+}
+
+// نتیجه SUM(...)
+export interface TotalResult extends RowDataPacket {
+  total: number;
+}
+
+// ردیف خام دسته برای کوئری (قابل پاس دادن به db.query)
+export interface CategorySummaryRow extends RowDataPacket {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+// ردیف خام موجودی شعبه (بدون فیلد available که در حافظه محاسبه می‌شود)
+export interface VariantStockRow extends RowDataPacket {
+  branch_id: number;
+  branch_name: string;
+  branch_slug: string;
+  branch_address: string | null;
+  branch_phone: string | null;
+  stock: number;
+  reserved: number;
+}
+
+// ردیف محصول با اطلاعات دسته (برای کوئری INNER JOIN)
+export interface ProductWithCategoryRow extends ProductRow {
+  category_name: string;
+  category_slug: string;
 }

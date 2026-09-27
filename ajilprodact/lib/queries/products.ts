@@ -9,8 +9,10 @@ import type {
   ProductImageRow,
   BatchRow,
   CategorySummary,
+  CategorySummaryRow,
   ProductListItem,
   ProductDetail,
+  ProductWithCategoryRow,
 } from '@/lib/types';
 
 // ==========================================
@@ -20,20 +22,12 @@ import type {
 async function attachVariantsAndImages(
   products: ProductRow[]
 ): Promise<ProductListItem[]> {
-  // اگر محصولی نبود، برگردان
   if (products.length === 0) return [];
 
-  // استخراج شناسه‌ها برای کوئری‌های گروهی
   const productIds = products.map((p) => p.id);
-
-  // ساخت پلیس‌هولدر برای IN clause
-  // مثال: اگر 3 محصول باشد، می‌شود "?,?,?"
   const placeholders = productIds.map(() => '?').join(',');
 
-  // دو کوئری موازی، نه سری
-  // Promise.all هر دو را همزمان اجرا می‌کند، نه یکی پس از دیگری
   const [variantsResult, imagesResult, categoriesResult] = await Promise.all([
-    // کوئری 1: همه واریانت‌های این محصولات
     db.query<ProductVariantRow[]>(
       `SELECT
          id, product_id, weight_gram, price, compare_price,
@@ -44,7 +38,6 @@ async function attachVariantsAndImages(
       productIds
     ),
 
-    // کوئری 2: تصویر اصلی هر محصول
     db.query<ProductImageRow[]>(
       `SELECT
          id, product_id, url, alt, sort_order, is_primary, created_at
@@ -54,8 +47,7 @@ async function attachVariantsAndImages(
       productIds
     ),
 
-    // کوئری 3: اطلاعات دسته هر محصول
-    db.query<CategorySummary[]>(
+    db.query<CategorySummaryRow[]>(
       `SELECT DISTINCT
          c.id, c.name, c.slug
        FROM categories c
@@ -65,12 +57,10 @@ async function attachVariantsAndImages(
     ),
   ]);
 
-  const variants = variantsResult[0] as ProductVariantRow[];
-  const images = imagesResult[0] as ProductImageRow[];
-  const categories = categoriesResult[0] as CategorySummary[];
+  const variants = variantsResult[0];
+  const images = imagesResult[0];
+  const categories = categoriesResult[0];
 
-  // ساخت Map برای جست‌وجوی سریع
-  // Map از product_id به آرایه واریانت‌ها
   const variantsByProduct = new Map<number, ProductVariantRow[]>();
   for (const v of variants) {
     const list = variantsByProduct.get(v.product_id) ?? [];
@@ -78,31 +68,28 @@ async function attachVariantsAndImages(
     variantsByProduct.set(v.product_id, list);
   }
 
-  // Map از product_id به تصویر اصلی
   const primaryImageByProduct = new Map<number, ProductImageRow>();
   for (const img of images) {
-    // فقط اولین تصویر (که primary است) را نگه دار
     if (!primaryImageByProduct.has(img.product_id)) {
       primaryImageByProduct.set(img.product_id, img);
     }
   }
 
-  // Map از id دسته به خلاصه دسته
   const categoryById = new Map<number, CategorySummary>();
   for (const c of categories) {
-    categoryById.set(c.id, c);
+    // CategorySummaryRow ساختارش با CategorySummary یکی است،
+    // پس این انتساب امن است
+    categoryById.set(c.id, { id: c.id, name: c.name, slug: c.slug });
   }
 
-  // ترکیب همه در ProductListItem
   return products.map((p) => {
     const productVariants = variantsByProduct.get(p.id) ?? [];
-    const category = categoryById.get(p.category_id) ?? {
+    const category: CategorySummary = categoryById.get(p.category_id) ?? {
       id: 0,
       name: 'بدون دسته',
       slug: '',
     };
 
-    // محاسبه کمترین قیمت
     const minPrice =
       productVariants.length > 0
         ? Math.min(...productVariants.map((v) => v.price))
@@ -142,7 +129,6 @@ export async function getProducts(
     featuredOnly = false,
   } = options;
 
-  // ساخت شرط‌های پویا
   const conditions: string[] = ['is_active = 1'];
   const params: unknown[] = [];
 
@@ -155,9 +141,6 @@ export async function getProducts(
     conditions.push('is_featured = 1');
   }
 
-  // LIMIT و OFFSET را هم به پارامترها اضافه کن
-  // نکته: در MySQL این دو نمی‌توانند با ? جایگزین شوند در همه نسخه‌ها
-  // پس از String interpolation استفاده می‌کنیم، ولی با parseInt امن است
   const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 100);
   const safeOffset = Math.max(0, Math.floor(offset));
 
@@ -176,8 +159,7 @@ export async function getProducts(
     params
   );
 
-  const products = rows as ProductRow[];
-  return attachVariantsAndImages(products);
+  return attachVariantsAndImages(rows);
 }
 
 // ==========================================
@@ -204,10 +186,7 @@ export async function getProductsByCategory(
 export async function getProductBySlug(
   slug: string
 ): Promise<ProductDetail | null> {
-  // کوئری اول: اطلاعات پایه محصول + دسته
-  const [productRows] = await db.query<
-    (ProductRow & { category_name: string; category_slug: string })[]
-  >(
+  const [productRows] = await db.query<ProductWithCategoryRow[]>(
     `SELECT
        p.id, p.name, p.slug, p.description, p.short_desc,
        p.category_id, p.meta_title, p.meta_desc,
@@ -222,14 +201,9 @@ export async function getProductBySlug(
     [slug]
   );
 
-  const productList = productRows as Array<
-    ProductRow & { category_name: string; category_slug: string }
-  >;
-  const product = productList[0];
-
+  const product = productRows[0];
   if (!product) return null;
 
-  // کوئری‌های موازی: واریانت‌ها، تصاویر، آخرین بچ
   const [variantsResult, imagesResult, batchesResult] = await Promise.all([
     db.query<ProductVariantRow[]>(
       `SELECT
@@ -264,9 +238,15 @@ export async function getProductBySlug(
     ),
   ]);
 
-  const variants = variantsResult[0] as ProductVariantRow[];
-  const images = imagesResult[0] as ProductImageRow[];
-  const batches = batchesResult[0] as BatchRow[];
+  const variants = variantsResult[0];
+  const images = imagesResult[0];
+  const batches = batchesResult[0];
+
+  const category: CategorySummary = {
+    id: product.category_id,
+    name: product.category_name,
+    slug: product.category_slug,
+  };
 
   return {
     id: product.id,
@@ -276,11 +256,7 @@ export async function getProductBySlug(
     short_desc: product.short_desc,
     meta_title: product.meta_title,
     meta_desc: product.meta_desc,
-    category: {
-      id: product.category_id,
-      name: product.category_name,
-      slug: product.category_slug,
-    },
+    category,
     variants,
     images,
     latest_batch: batches[0] ?? null,

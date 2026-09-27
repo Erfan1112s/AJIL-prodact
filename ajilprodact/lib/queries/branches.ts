@@ -2,7 +2,12 @@
 // توابع خواندن شعبات و موجودی
 
 import { db } from '@/lib/db';
-import type { BranchRow, VariantBranchStock } from '@/lib/types';
+import type {
+  BranchRow,
+  VariantBranchStock,
+  VariantStockRow,
+  TotalResult,
+} from '@/lib/types';
 
 // ==========================================
 // تابع 1: لیست همه شعبات فعال
@@ -17,7 +22,7 @@ export async function getActiveBranches(): Promise<BranchRow[]> {
      ORDER BY name ASC`
   );
 
-  return rows as BranchRow[];
+  return rows;
 }
 
 // ==========================================
@@ -34,8 +39,7 @@ export async function getBranchBySlug(slug: string): Promise<BranchRow | null> {
     [slug]
   );
 
-  const list = rows as BranchRow[];
-  return list[0] ?? null;
+  return rows[0] ?? null;
 }
 
 // ==========================================
@@ -45,17 +49,7 @@ export async function getBranchBySlug(slug: string): Promise<BranchRow | null> {
 export async function getVariantAvailability(
   variantId: number
 ): Promise<VariantBranchStock[]> {
-  const [rows] = await db.query<
-    Array<{
-      branch_id: number;
-      branch_name: string;
-      branch_slug: string;
-      branch_address: string | null;
-      branch_phone: string | null;
-      stock: number;
-      reserved: number;
-    }>
-  >(
+  const [rows] = await db.query<VariantStockRow[]>(
     `SELECT
        b.id AS branch_id,
        b.name AS branch_name,
@@ -72,17 +66,7 @@ export async function getVariantAvailability(
     [variantId]
   );
 
-  const list = rows as Array<{
-    branch_id: number;
-    branch_name: string;
-    branch_slug: string;
-    branch_address: string | null;
-    branch_phone: string | null;
-    stock: number;
-    reserved: number;
-  }>;
-
-  return list.map((row) => ({
+  return rows.map((row) => ({
     branch_id: row.branch_id,
     branch_name: row.branch_name,
     branch_slug: row.branch_slug,
@@ -99,13 +83,12 @@ export async function getVariantAvailability(
 // برای نمایش "موجود / ناموجود" در کارت محصول
 // ==========================================
 export async function getTotalStockForVariant(variantId: number): Promise<number> {
-  const [rows] = await db.query<Array<{ total: number }>>(
+  const [rows] = await db.query<TotalResult[]>(
     `SELECT COALESCE(SUM(stock - reserved), 0) AS total
      FROM branch_inventory
      WHERE variant_id = ?`,
     [variantId]
   );
 
-  const list = rows as Array<{ total: number }>;
-  return list[0]?.total ?? 0;
+  return rows[0]?.total ?? 0;
 }

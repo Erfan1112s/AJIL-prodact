@@ -2,7 +2,7 @@
 // توابع خواندن مشتریان
 
 import { db } from '@/lib/db';
-import type { CustomerRow } from '@/lib/types';
+import type { CustomerRow, CountResult } from '@/lib/types';
 
 // ==========================================
 // تابع 1: مشتری با شماره موبایل
@@ -21,8 +21,7 @@ export async function getCustomerByPhone(
     [phone]
   );
 
-  const list = rows as CustomerRow[];
-  return list[0] ?? null;
+  return rows[0] ?? null;
 }
 
 // ==========================================
@@ -40,8 +39,7 @@ export async function getCustomerById(id: number): Promise<CustomerRow | null> {
     [id]
   );
 
-  const list = rows as CustomerRow[];
-  return list[0] ?? null;
+  return rows[0] ?? null;
 }
 
 // ==========================================
@@ -62,7 +60,6 @@ export async function getCustomers(
   const conditions: string[] = ['is_active = 1'];
   const params: unknown[] = [];
 
-  // اگر search داده شد، در نام یا شماره جست‌وجو کن
   if (search && search.trim().length > 0) {
     conditions.push('(full_name LIKE ? OR phone LIKE ?)');
     const term = `%${search.trim()}%`;
@@ -86,7 +83,7 @@ export async function getCustomers(
     params
   );
 
-  return rows as CustomerRow[];
+  return rows;
 }
 
 // ==========================================
@@ -105,11 +102,10 @@ export async function getCustomersCount(search?: string): Promise<number> {
 
   const whereClause = conditions.join(' AND ');
 
-  const [rows] = await db.query<Array<{ count: number }>>(
+  const [rows] = await db.query<CountResult[]>(
     `SELECT COUNT(*) AS count FROM customers WHERE ${whereClause}`,
     params
   );
 
-  const list = rows as Array<{ count: number }>;
-  return list[0]?.count ?? 0;
+  return rows[0]?.count ?? 0;
 }
