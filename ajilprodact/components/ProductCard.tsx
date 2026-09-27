@@ -1,10 +1,11 @@
 // components/ProductCard.tsx
-// کارت محصول - Server Component
-// تنها بخش تعاملی (دکمه سبد) در QuickAddButton جدا شده است
+// کارت محصول با پالت قهوه‌ای و طلایی
 
 import Image from 'next/image';
 import Link from 'next/link';
 import QuickAddButton from '@/components/QuickAddButton';
+import ProductHeartButton from '@/components/ProductHeartButton';
+import { LeafIcon } from '@/components/icons';
 import type { ProductListItem } from '@/lib/types';
 
 interface Props {
@@ -12,7 +13,6 @@ interface Props {
   priority?: boolean;
 }
 
-// تابع کمکی برای نمایش قیمت
 function formatPrice(price: number): string {
   return price.toLocaleString('fa-IR');
 }
@@ -21,79 +21,81 @@ export default function ProductCard({ product, priority = false }: Props) {
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="group block bg-white border border-ink-200 rounded-2xl overflow-hidden card-soft"
+      className="group relative block aspect-[3/4] rounded-3xl overflow-hidden shadow-lg shadow-coffee-900/10 hover:shadow-2xl hover:shadow-coffee-900/20 transition-all duration-500 hover:-translate-y-1"
     >
-      {/* بخش تصویر */}
-      <div className="aspect-square bg-ink-50 relative overflow-hidden">
-        {product.primary_image ? (
-          <Image
-            src={product.primary_image.url}
-            alt={product.primary_image.alt ?? product.name}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-            priority={priority}
-          />
-        ) : (
-          // حالت بدون تصویر
-          <div className="flex flex-col items-center justify-center h-full gap-2 text-ink-300">
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="9" cy="9" r="2" />
-              <path d="m21 15-5-5L5 21" />
-            </svg>
-            <span className="text-xs">بدون تصویر</span>
-          </div>
-        )}
+      {/* پس‌زمینه */}
+      {product.primary_image ? (
+        <Image
+          src={product.primary_image.url}
+          alt={product.primary_image.alt ?? product.name}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-700"
+          priority={priority}
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-coffee-700 to-coffee-900" />
+      )}
 
-        {/* برچسب ویژه */}
-        {product.is_featured === 1 && (
-          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-accent-500 text-white text-[10px] font-bold shadow-lg">
+      {/* گرادیانت تیره */}
+      <div
+        className="absolute inset-0 bg-gradient-to-t from-coffee-900 via-coffee-900/55 to-coffee-900/15"
+        aria-hidden="true"
+      />
+
+      {/* ردیف بالایی */}
+      <div className="absolute top-3 right-3 left-3 flex items-start justify-between gap-2 z-10">
+        {product.is_featured === 1 ? (
+          <div className="px-2.5 py-1 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-coffee-900 text-[10px] font-bold shadow-lg shadow-gold-500/40">
             ویژه
           </div>
+        ) : (
+          <div />
         )}
 
-        {/* دکمه افزودن سریع - یک Client Component جدا */}
-        <QuickAddButton
-          productSlug={product.slug}
-          productName={product.name}
-        />
+        <ProductHeartButton productId={product.id} />
       </div>
 
-      {/* بخش اطلاعات */}
-      <div className="p-4">
-        <div className="text-[11px] text-brand-700 font-medium mb-1.5">
+      {/* پیل قیمت */}
+      <div className="absolute top-[calc(100%-11rem)] right-3 z-10">
+        <div className="inline-flex items-baseline gap-1.5 bg-white/95 backdrop-blur-md rounded-full px-3 py-1.5 shadow-lg border border-gold-200/50">
+          <span className="text-coffee-500 text-[10px] font-medium">از</span>
+          <span className="font-bold text-coffee-900 fa-num text-sm">
+            {formatPrice(product.min_price)}
+          </span>
+          <span className="text-coffee-500 text-[10px]">تومان</span>
+        </div>
+      </div>
+
+      {/* دکمه سبد */}
+      <QuickAddButton
+        productSlug={product.slug}
+        productName={product.name}
+      />
+
+      {/* محتوای پایین */}
+      <div className="absolute bottom-0 right-0 left-0 p-4">
+        {/* برچسب دسته */}
+        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold-500/20 backdrop-blur-sm border border-gold-400/30 text-gold-100 text-[10px] font-medium mb-2">
+          <LeafIcon className="w-3 h-3" />
           {product.category.name}
         </div>
 
-        <h3 className="font-bold text-sm text-ink-900 mb-3 line-clamp-2 leading-6 group-hover:text-brand-700 transition-colors">
+        {/* نام */}
+        <h3 className="text-base sm:text-lg font-bold text-cream-50 leading-snug mb-3 line-clamp-2 min-h-[2.6rem]">
           {product.name}
         </h3>
 
-        <div className="flex items-end justify-between">
-          <div>
-            <div className="text-[10px] text-ink-500 mb-0.5">
-              شروع از
-            </div>
-            <div className="font-bold text-brand-700 fa-num text-lg">
-              {formatPrice(product.min_price)}
-              <span className="text-xs font-normal text-ink-500 mr-1">
-                تومان
-              </span>
-            </div>
-          </div>
-
-          {/* تعداد وزن‌ها */}
-          <div className="text-[10px] text-ink-400 fa-num">
+        {/* ردیف اطلاعات */}
+        <div className="flex items-center justify-between gap-2 text-cream-200/85 text-[11px]">
+          <span className="fa-num">
             {product.variants.length.toLocaleString('fa-IR')} وزن
-          </div>
+          </span>
+
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-gold-400" />
+            ارسال سریع
+          </span>
         </div>
       </div>
     </Link>

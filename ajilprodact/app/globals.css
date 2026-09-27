@@ -1,77 +1,74 @@
 @import "tailwindcss";
 
-
-
-
 @theme {
   /* فونت */
   --font-sans: var(--font-vazirmatn), system-ui, -apple-system, "Segoe UI",
     Roboto, Arial, sans-serif;
 
-  /* رنگ اصلی برند: سبز آجیلی */
-  --color-brand-50: #f0fdf4;
-  --color-brand-100: #dcfce7;
-  --color-brand-200: #bbf7d0;
-  --color-brand-300: #86efac;
-  --color-brand-400: #4ade80;
-  --color-brand-500: #22c55e;
-  --color-brand-600: #16a34a;
-  --color-brand-700: #15803d;
-  --color-brand-800: #166534;
-  --color-brand-900: #14532d;
+  /* ==========================================
+     قهوه‌ای گرم‌تر (با تمایل نارنجی-طلایی)
+     ========================================== */
+  --color-coffee-50:  #FBF6F0;
+  --color-coffee-100: #F5E8D9;
+  --color-coffee-200: #EBD3B8;
+  --color-coffee-300: #D9B98E;
+  --color-coffee-400: #C39A66;
+  --color-coffee-500: #A87B4A;
+  --color-coffee-600: #8A6238;
+  --color-coffee-700: #6B4A2A;
+  --color-coffee-800: #4E3620;
+  --color-coffee-900: #34261A;
 
-  /* رنگ مکمل: نارنجی گرم برای تاکید */
-  --color-accent-400: #fbbf24;
-  --color-accent-500: #f59e0b;
-  --color-accent-600: #d97706;
+  /* ==========================================
+     طلایی روشن‌تر و درخشان‌تر
+     ========================================== */
+  --color-gold-50:  #FFFBEB;
+  --color-gold-100: #FEF3C7;
+  --color-gold-200: #FDE68A;
+  --color-gold-300: #FCD34D;
+  --color-gold-400: #FBBF24;
+  --color-gold-500: #F59E0B;
+  --color-gold-600: #D97706;
+  --color-gold-700: #B45309;
+  --color-gold-800: #92400E;
+  --color-gold-900: #78350F;
 
-  /* رنگ خاکستری گرم برای متن و پس‌زمینه */
-  --color-ink-50: #fafaf9;
-  --color-ink-100: #f5f5f4;
-  --color-ink-200: #e7e5e4;
-  --color-ink-300: #d6d3d1;
-  --color-ink-400: #a8a29e;
-  --color-ink-500: #78716c;
-  --color-ink-600: #57534e;
-  --color-ink-700: #44403c;
-  --color-ink-800: #292524;
-  --color-ink-900: #1c1917;
+  /* ==========================================
+     کرم گرم
+     ========================================== */
+  --color-cream-50:  #FFFDF7;
+  --color-cream-100: #FDF8EE;
+  --color-cream-200: #F8EFDD;
+  --color-cream-300: #EFE0C7;
 
-  /* انیمیشن‌های سفارشی */
+  /* انیمیشن‌ها */
   --animate-fade-up: fade-up 0.5s ease-out;
   --animate-fade-in: fade-in 0.4s ease-out;
   --animate-slide-down: slide-down 0.3s ease-out;
 }
 
 /* ==========================================
-   انیمیشن‌ها
+   کیفریم‌ها
    ========================================== */
 
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 @keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fade-in {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
 @keyframes slide-down {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ==========================================
@@ -96,76 +93,105 @@ body {
 body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  background-color: #FDFBF7;
 }
 
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ==========================================
-   کلاس‌های کاربردی سفارشی
-   ========================================== */
-
 /* اعداد فارسی */
 .fa-num {
   font-variant-numeric: tabular-nums;
 }
 
-/* کارت با سایه لایه‌ای نرم */
-.card-soft {
+/* ==========================================
+   کلاس‌های کاربردی سفارشی
+   ========================================== */
+
+/* کارت با سایه گرم قهوه‌ای */
+.card-warm {
   box-shadow:
-    0 1px 2px rgba(28, 25, 23, 0.04),
-    0 4px 12px rgba(28, 25, 23, 0.04);
+    0 1px 2px rgba(62, 39, 35, 0.05),
+    0 4px 16px rgba(62, 39, 35, 0.06);
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
-.card-soft:hover {
+.card-warm:hover {
   box-shadow:
-    0 1px 2px rgba(28, 25, 23, 0.06),
-    0 12px 28px rgba(28, 25, 23, 0.08);
-  transform: translateY(-2px);
+    0 1px 2px rgba(62, 39, 35, 0.08),
+    0 16px 40px rgba(62, 39, 35, 0.12);
+  transform: translateY(-3px);
 }
 
-/* پس‌زمینه نقطه‌ای برای Hero */
-.bg-dotted {
+/* پس‌زمینه نقطه‌ای طلایی */
+.bg-dotted-gold {
   background-image: radial-gradient(
     circle,
-    rgba(22, 163, 74, 0.08) 1px,
+    rgba(201, 152, 42, 0.12) 1px,
     transparent 1px
   );
-  background-size: 24px 24px;
+  background-size: 28px 28px;
 }
 
-/* متن با گرادیانت */
-.text-gradient {
-  background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);
+/* متن با گرادیانت طلایی */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #C9982A 0%, #E8C874 50%, #C9982A 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* شیشه‌ای */
-.glass {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* دکمه طلایی درخشان */
+.btn-gold {
+  background: linear-gradient(135deg, #D9B24A 0%, #C9982A 100%);
+  color: #2D1B17;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(201, 152, 42, 0.35);
+  transition: all 0.3s ease;
 }
 
-/* خط تزئینی زیر عنوان */
-.underline-accent {
+.btn-gold:hover {
+  background: linear-gradient(135deg, #E8C874 0%, #D9B24A 100%);
+  box-shadow: 0 8px 24px rgba(201, 152, 42, 0.5);
+  transform: translateY(-1px);
+}
+
+/* نوار درخشان روی دکمه */
+.shimmer-line {
   position: relative;
-  display: inline-block;
+  overflow: hidden;
 }
 
-.underline-accent::after {
+.shimmer-line::after {
   content: '';
   position: absolute;
-  bottom: -6px;
+  top: 0;
   right: 0;
-  left: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #22c55e, #86efac);
-  border-radius: 2px;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  animation: shimmer 2.5s infinite;
+  pointer-events: none;
+}
+
+/* شیشه‌ای تیره */
+.glass-dark {
+  background: rgba(62, 39, 35, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* جداکننده طلایی */
+.divider-gold {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #C9982A, transparent);
+  border: none;
 }
 
 /* حذف اسکرول‌بار افقی در موبایل */

@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#16a34a',
+  themeColor: '#C9982A',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -45,14 +45,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
-      <body className="font-sans antialiased bg-white text-ink-900 min-h-screen flex flex-col">
-        {/* هدر سراسری */}
+      <body className="font-sans antialiased bg-cream-50 text-coffee-900 min-h-screen flex flex-col">
         <Header />
-
-        {/* محتوای اصلی */}
         <div className="flex-1">{children}</div>
-
-        {/* فوتر سراسری */}
         <Footer />
       </body>
     </html>

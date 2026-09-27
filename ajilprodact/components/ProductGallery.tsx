@@ -1,6 +1,5 @@
 // components/ProductGallery.tsx
-// گالری تصاویر محصول با انتخاب تصویر اصلی
-// Client Component چون state دارد
+// گالری تصاویر محصول
 
 'use client';
 
@@ -14,10 +13,9 @@ interface Props {
 }
 
 export default function ProductGallery({ images, productName }: Props) {
-  // اگر تصویری نیست، پیام بده
   if (images.length === 0) {
     return (
-      <div className="aspect-square bg-ink-50 rounded-2xl flex flex-col items-center justify-center gap-3 text-ink-300">
+      <div className="aspect-square bg-cream-100 rounded-2xl flex flex-col items-center justify-center gap-3 text-coffee-300">
         <svg
           width="60"
           height="60"
@@ -35,20 +33,13 @@ export default function ProductGallery({ images, productName }: Props) {
     );
   }
 
-  // پیدا کردن تصویر اصلی
   const primary = images.find((img) => img.is_primary === 1) ?? images[0];
-
-  // state برای تصویر فعال
-  // مقدار اولیه: تصویر اصلی
   const [activeId, setActiveId] = useState(primary.id);
-
-  // تصویر فعال
   const active = images.find((img) => img.id === activeId) ?? primary;
 
   return (
     <div className="space-y-3">
-      {/* تصویر بزرگ */}
-      <div className="aspect-square bg-ink-50 rounded-2xl overflow-hidden relative border border-ink-100">
+      <div className="aspect-square bg-cream-100 rounded-2xl overflow-hidden relative border border-coffee-200">
         <Image
           src={active.url}
           alt={active.alt ?? productName}
@@ -58,9 +49,8 @@ export default function ProductGallery({ images, productName }: Props) {
           priority
         />
 
-        {/* نشان تعداد تصاویر */}
         {images.length > 1 && (
-          <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-ink-900/70 text-white text-xs fa-num backdrop-blur-sm">
+          <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-coffee-900/80 text-gold-200 text-xs fa-num backdrop-blur-sm">
             {images
               .findIndex((img) => img.id === activeId)
               .valueOf()
@@ -71,21 +61,20 @@ export default function ProductGallery({ images, productName }: Props) {
         )}
       </div>
 
-      {/* تصاویر کوچک */}
       {images.length > 1 && (
         <div className="grid grid-cols-4 gap-2">
           {images.map((img) => {
             const isActive = img.id === activeId;
             const thumbClass = isActive
-              ? 'ring-2 ring-brand-500 ring-offset-2'
-              : 'ring-1 ring-ink-200 hover:ring-brand-300';
+              ? 'ring-2 ring-gold-500 ring-offset-2'
+              : 'ring-1 ring-coffee-200 hover:ring-gold-300';
 
             return (
               <button
                 key={img.id}
                 type="button"
                 onClick={() => setActiveId(img.id)}
-                className={`aspect-square bg-ink-50 rounded-xl overflow-hidden relative transition-all ${thumbClass}`}
+                className={`aspect-square bg-cream-100 rounded-xl overflow-hidden relative transition-all ${thumbClass}`}
                 aria-label={`نمایش تصویر ${img.alt ?? productName}`}
               >
                 <Image

@@ -25,9 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: category.name,
     description:
       category.description ?? `محصولات دسته ${category.name}`,
-    alternates: {
-      canonical: `/categories/${category.slug}`,
-    },
+    alternates: { canonical: `/categories/${category.slug}` },
   };
 }
 
@@ -41,41 +39,41 @@ export default async function CategoryProductsPage({ params }: Props) {
 
   return (
     <main className="min-h-screen">
-      <div className="bg-ink-50 border-b border-ink-200">
-        <Container className="py-3 text-sm text-ink-600">
-          <Link href="/" className="hover:text-brand-700 transition-colors">
+      <div className="bg-cream-100 border-b border-coffee-200">
+        <Container className="py-3 text-sm text-coffee-600">
+          <Link href="/" className="hover:text-gold-700 transition-colors">
             خانه
           </Link>
-          <span className="mx-2 text-ink-400">/</span>
+          <span className="mx-2 text-coffee-400">/</span>
           <Link
             href="/categories"
-            className="hover:text-brand-700 transition-colors"
+            className="hover:text-gold-700 transition-colors"
           >
             دسته‌بندی‌ها
           </Link>
-          <span className="mx-2 text-ink-400">/</span>
-          <span className="text-ink-900">{category.name}</span>
+          <span className="mx-2 text-coffee-400">/</span>
+          <span className="text-coffee-900">{category.name}</span>
         </Container>
       </div>
 
-      <section className="bg-gradient-to-b from-brand-50/50 to-white border-b border-ink-100">
+      <section className="bg-gradient-to-b from-gold-50/60 to-cream-50 border-b border-coffee-100">
         <Container className="py-10 sm:py-12">
           <div className="flex items-center gap-4 mb-3">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center text-2xl font-bold shrink-0 shadow-lg shadow-brand-600/20">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 text-coffee-900 flex items-center justify-center text-2xl font-bold shrink-0 shadow-lg shadow-gold-500/30">
               {category.name.charAt(0)}
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-ink-900 mb-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-coffee-900 mb-1">
                 {category.name}
               </h1>
-              <p className="text-xs text-ink-500 fa-num">
+              <p className="text-xs text-coffee-500 fa-num">
                 {products.length.toLocaleString('fa-IR')} محصول در این دسته
               </p>
             </div>
           </div>
 
           {category.description && (
-            <p className="text-sm text-ink-600 max-w-2xl leading-7 mt-4">
+            <p className="text-sm text-coffee-600 max-w-2xl leading-7 mt-4">
               {category.description}
             </p>
           )}
@@ -85,7 +83,7 @@ export default async function CategoryProductsPage({ params }: Props) {
       <Container className="py-10">
         {products.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-ink-100 mx-auto mb-4 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-cream-100 mx-auto mb-4 flex items-center justify-center">
               <svg
                 width="28"
                 height="28"
@@ -93,25 +91,25 @@ export default async function CategoryProductsPage({ params }: Props) {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                className="text-ink-400"
+                className="text-coffee-400"
               >
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <circle cx="9" cy="9" r="2" />
                 <path d="m21 15-5-5L5 21" />
               </svg>
             </div>
-            <p className="text-ink-500 mb-4">
+            <p className="text-coffee-500 mb-4">
               محصولی در این دسته ثبت نشده است.
             </p>
             <Link
               href="/products"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors"
+              className="inline-flex items-center gap-2 btn-gold px-5 py-2.5 rounded-xl text-sm"
             >
               مشاهده همه محصولات
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {products.map((product, index) => (
               <ProductCard
                 key={product.id}

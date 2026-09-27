@@ -1,5 +1,5 @@
 // components/ProductVariantSelector.tsx
-// انتخاب وزن و نمایش قیمت لحظه‌ای با طراحی مدرن
+// انتخاب وزن و خرید با پالت قهوه‌ای و طلایی
 
 'use client';
 
@@ -24,13 +24,12 @@ export default function ProductVariantSelector({ variants }: Props) {
 
   if (variants.length === 0) {
     return (
-      <div className="rounded-2xl border border-ink-200 bg-ink-50 p-6 text-center text-sm text-ink-500">
+      <div className="rounded-2xl border border-coffee-200 bg-cream-100 p-6 text-center text-sm text-coffee-500">
         برای این محصول وزنی ثبت نشده است.
       </div>
     );
   }
 
-  // محاسبه درصد تخفیف
   const discountPercent =
     selected?.compare_price && selected.compare_price > selected.price
       ? Math.round(
@@ -44,10 +43,10 @@ export default function ProductVariantSelector({ variants }: Props) {
       {/* انتخاب وزن */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-semibold text-ink-900">
+          <span className="text-sm font-semibold text-coffee-900">
             انتخاب وزن
           </span>
-          <span className="text-xs text-ink-500 fa-num">
+          <span className="text-xs text-coffee-500 fa-num">
             {variants.length.toLocaleString('fa-IR')} وزن موجود
           </span>
         </div>
@@ -55,8 +54,7 @@ export default function ProductVariantSelector({ variants }: Props) {
         <div className="grid grid-cols-3 gap-2">
           {variants.map((v) => {
             const isSelected = v.id === selectedId;
-            const hasDiscount =
-              v.compare_price && v.compare_price > v.price;
+            const hasDiscount = v.compare_price && v.compare_price > v.price;
 
             return (
               <button
@@ -65,13 +63,13 @@ export default function ProductVariantSelector({ variants }: Props) {
                 onClick={() => setSelectedId(v.id)}
                 className={`relative px-3 py-3 rounded-xl border-2 text-center transition-all ${
                   isSelected
-                    ? 'border-brand-500 bg-brand-50 shadow-md shadow-brand-500/10'
-                    : 'border-ink-200 bg-white hover:border-brand-300'
+                    ? 'border-gold-500 bg-gold-50 shadow-md shadow-gold-500/20'
+                    : 'border-coffee-200 bg-white hover:border-gold-300'
                 }`}
               >
                 <div
                   className={`font-bold text-sm fa-num ${
-                    isSelected ? 'text-brand-700' : 'text-ink-800'
+                    isSelected ? 'text-gold-700' : 'text-coffee-800'
                   }`}
                 >
                   {v.weight_gram.toLocaleString('fa-IR')}
@@ -79,15 +77,14 @@ export default function ProductVariantSelector({ variants }: Props) {
                 </div>
                 <div
                   className={`text-[10px] mt-1 fa-num ${
-                    isSelected ? 'text-brand-600' : 'text-ink-500'
+                    isSelected ? 'text-gold-600' : 'text-coffee-500'
                   }`}
                 >
                   {formatPrice(v.price)}
                 </div>
 
-                {/* نشان تخفیف */}
                 {hasDiscount && (
-                  <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-accent-500 text-white text-[9px] font-bold shadow-sm fa-num">
+                  <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-coffee-900 text-[9px] font-bold shadow-sm fa-num">
                     {Math.round(
                       ((v.compare_price! - v.price) / v.compare_price!) * 100
                     ).toLocaleString('fa-IR')}
@@ -102,28 +99,25 @@ export default function ProductVariantSelector({ variants }: Props) {
 
       {/* کارت قیمت و خرید */}
       {selected && (
-        <div className="rounded-2xl border border-ink-200 bg-gradient-to-b from-white to-ink-50/50 p-5">
-          {/* قیمت */}
-          <div className="flex items-end justify-between mb-4">
+        <div className="rounded-2xl border border-gold-200 bg-gradient-to-b from-gold-50 to-cream-50 p-5">
+          <div className="flex items-end justify-between mb-4 flex-wrap gap-3">
             <div>
-              <div className="text-xs text-ink-500 mb-1">قیمت</div>
+              <div className="text-xs text-coffee-500 mb-1">قیمت</div>
               <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="text-2xl font-bold text-brand-700 fa-num">
+                <span className="text-2xl font-bold text-gradient-gold fa-num">
                   {formatPrice(selected.price)}
                 </span>
-                <span className="text-xs text-ink-500">تومان</span>
+                <span className="text-xs text-coffee-600">تومان</span>
 
-                {/* قیمت قبل از تخفیف */}
                 {selected.compare_price &&
                   selected.compare_price > selected.price && (
-                    <span className="text-sm text-ink-400 line-through fa-num">
+                    <span className="text-sm text-coffee-400 line-through fa-num">
                       {formatPrice(selected.compare_price)}
                     </span>
                   )}
               </div>
             </div>
 
-            {/* نشان تخفیف */}
             {discountPercent > 0 && (
               <div className="px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-bold fa-num">
                 {discountPercent.toLocaleString('fa-IR')}٪ تخفیف
@@ -131,11 +125,10 @@ export default function ProductVariantSelector({ variants }: Props) {
             )}
           </div>
 
-          {/* دکمه‌ها */}
           <div className="space-y-2">
             <button
               type="button"
-              className="w-full inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white py-3.5 rounded-xl font-medium transition-colors shadow-lg shadow-brand-600/20"
+              className="w-full inline-flex items-center justify-center gap-2 btn-gold shimmer-line py-3.5 rounded-xl"
             >
               <CartIcon className="w-5 h-5" />
               افزودن به سبد خرید
@@ -143,25 +136,24 @@ export default function ProductVariantSelector({ variants }: Props) {
 
             <button
               type="button"
-              className="w-full inline-flex items-center justify-center gap-2 bg-white border border-ink-200 hover:border-brand-500 hover:text-brand-700 text-ink-800 py-3 rounded-xl text-sm font-medium transition-colors"
+              className="w-full inline-flex items-center justify-center gap-2 bg-white border border-coffee-200 hover:border-gold-500 hover:text-gold-700 text-coffee-800 py-3 rounded-xl text-sm font-medium transition-colors"
             >
               <NfcIcon className="w-4 h-4" />
               رزرو از شعبه
             </button>
           </div>
 
-          {/* اطلاعات کوچک */}
-          <div className="mt-4 pt-4 border-t border-ink-100 flex items-center justify-center gap-4 text-[11px] text-ink-500">
+          <div className="mt-4 pt-4 border-t border-gold-200/60 flex items-center justify-center gap-4 text-[11px] text-coffee-600">
             <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-gold-500" />
               ارسال سریع
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-gold-500" />
               تضمین تازگی
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-gold-500" />
               پرداخت امن
             </span>
           </div>

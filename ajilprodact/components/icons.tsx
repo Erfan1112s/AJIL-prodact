@@ -1,7 +1,6 @@
 // components/icons.tsx
-// آیکون‌های SVG درون‌خطی
-// هر آیکون یک کامپوننت است که className و بقیه پراپ‌های SVG را می‌پذیرد
-// همه با stroke طراحی شده‌اند تا با currentColor رنگ بگیرند
+// آیکون‌های SVG درون‌خطی پروژه
+// همه با stroke طراحی شده‌اند و رنگ را از currentColor می‌گیرند
 
 import type { SVGProps } from 'react';
 
@@ -19,7 +18,11 @@ const baseProps = {
   strokeLinejoin: 'round' as const,
 };
 
-// آیکون سبد خرید
+// ==========================================
+// آیکون‌های ناوبری
+// ==========================================
+
+// سبد خرید
 export function CartIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -30,7 +33,7 @@ export function CartIcon(props: IconProps) {
   );
 }
 
-// آیکون منو (همبرگری)
+// منو (همبرگری)
 export function MenuIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -39,7 +42,7 @@ export function MenuIcon(props: IconProps) {
   );
 }
 
-// آیکون بستن
+// بستن
 export function CloseIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -48,7 +51,7 @@ export function CloseIcon(props: IconProps) {
   );
 }
 
-// آیکون جست‌وجو
+// جست‌وجو
 export function SearchIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -58,7 +61,7 @@ export function SearchIcon(props: IconProps) {
   );
 }
 
-// آیکون کاربر
+// کاربر
 export function UserIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -68,7 +71,11 @@ export function UserIcon(props: IconProps) {
   );
 }
 
-// آیکون تلفن
+// ==========================================
+// آیکون‌های ارتباط
+// ==========================================
+
+// تلفن
 export function PhoneIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -77,7 +84,7 @@ export function PhoneIcon(props: IconProps) {
   );
 }
 
-// آیکون موقعیت مکانی
+// موقعیت مکانی
 export function MapPinIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -87,7 +94,11 @@ export function MapPinIcon(props: IconProps) {
   );
 }
 
-// آیکون ستاره
+// ==========================================
+// آیکون‌های نشان و مزیت
+// ==========================================
+
+// ستاره
 export function StarIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props} fill="currentColor" stroke="none">
@@ -96,7 +107,7 @@ export function StarIcon(props: IconProps) {
   );
 }
 
-// آیکون سپر (برای اطمینان)
+// سپر (اطمینان)
 export function ShieldIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -106,7 +117,7 @@ export function ShieldIcon(props: IconProps) {
   );
 }
 
-// آیکون کامیون (ارسال)
+// کامیون (ارسال)
 export function TruckIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -118,7 +129,7 @@ export function TruckIcon(props: IconProps) {
   );
 }
 
-// آیکون برگ (طبیعی)
+// برگ (طبیعی)
 export function LeafIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -128,7 +139,11 @@ export function LeafIcon(props: IconProps) {
   );
 }
 
-// آیکون فلش چپ (برای RTL)
+// ==========================================
+// آیکون‌های جهت‌دار (RTL)
+// ==========================================
+
+// فلش چپ
 export function ArrowLeftIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -138,7 +153,7 @@ export function ArrowLeftIcon(props: IconProps) {
   );
 }
 
-// آیکون فلش راست (برای RTL)
+// فلش راست
 export function ArrowRightIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -148,7 +163,11 @@ export function ArrowRightIcon(props: IconProps) {
   );
 }
 
-// آیکون NFC (برای نمایش در صفحه محصول)
+// ==========================================
+// آیکون‌های ویژه محصول
+// ==========================================
+
+// NFC
 export function NfcIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -156,6 +175,36 @@ export function NfcIcon(props: IconProps) {
       <path d="M10 5.5a12 12 0 0 1 0 13" />
       <path d="M14 3a16 16 0 0 1 0 18" />
       <path d="M18 0.5v23" />
+    </svg>
+  );
+}
+
+// قلب علاقه‌مندی
+// با پراپ filled برای دو حالت: توخالی و پرشده
+export function HeartIcon({
+  filled = false,
+  ...props
+}: IconProps & { filled?: boolean }) {
+  return (
+    <svg
+      {...baseProps}
+      {...props}
+      // اگر filled بود، داخل آیکون را با currentColor پر کن
+      // اگر نبود، فقط خط دور داشته باشد
+      fill={filled ? 'currentColor' : 'none'}
+    >
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  );
+}
+
+// بسته‌بندی (تعداد وزن‌ها)
+export function PackageIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M21 8v8a2 2 0 0 1-1 1.73l-7 4a2 2 0 0 1-2 0l-7-4A2 2 0 0 1 3 16V8a2 2 0 0 1 1-1.73l7-4a2 2 0 0 1 2 0l7 4A2 2 0 0 1 21 8z" />
+      <path d="m3.3 7 8.7 5 8.7-5" />
+      <path d="M12 22V12" />
     </svg>
   );
 }
