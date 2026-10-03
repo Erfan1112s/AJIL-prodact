@@ -4,6 +4,7 @@ import { Vazirmatn } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { CartProvider } from '@/lib/cart/CartContext';
 
 const vazirmatn = Vazirmatn({
   subsets: ['arabic'],
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#C9982A',
+  themeColor: '#F59E0B',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -46,9 +47,13 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
       <body className="font-sans antialiased bg-cream-50 text-coffee-900 min-h-screen flex flex-col">
-        <Header />
-        <div className="flex-1">{children}</div>
-        <Footer />
+        {/* CartProvider کل اپلیکیشن را می‌پیچد */}
+        {/* هر کامپوننتی داخل این درخت، به useCart دسترسی دارد */}
+        <CartProvider>
+          <Header />
+          <div className="flex-1">{children}</div>
+          <Footer />
+        </CartProvider>
       </body>
     </html>
   );

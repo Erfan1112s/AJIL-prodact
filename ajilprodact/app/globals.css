@@ -45,6 +45,8 @@
   --animate-fade-up: fade-up 0.5s ease-out;
   --animate-fade-in: fade-in 0.4s ease-out;
   --animate-slide-down: slide-down 0.3s ease-out;
+  --animate-ring-once: ring-once 0.6s ease-out 1;
+  --animate-pop-once: pop-once 0.4s ease-out 1;
 }
 
 /* ==========================================
@@ -71,6 +73,33 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* حلقه‌ای که یک بار باز می‌شود و محو می‌شود */
+@keyframes ring-once {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* پاپ ملایم برای آیکون تیک */
+@keyframes pop-once {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
 /* ==========================================
    تنظیمات پایه
    ========================================== */

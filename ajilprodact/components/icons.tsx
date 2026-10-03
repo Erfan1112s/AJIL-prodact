@@ -208,3 +208,12 @@ export function PackageIcon(props: IconProps) {
     </svg>
   );
 }
+
+// آیکون تیک - برای نمایش تایید در دکمه افزودن به سبد
+export function CheckIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}

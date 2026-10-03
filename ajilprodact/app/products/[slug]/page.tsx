@@ -95,7 +95,17 @@ export default async function ProductPage({ params }: Props) {
         >
           <div className="md:col-span-2">
             <div className="rounded-3xl border border-coffee-200 bg-white p-5 sm:p-6">
-              <ProductVariantSelector variants={product.variants} />
+              <ProductVariantSelector
+               variants={product.variants}
+               productId={product.id}
+               productName={product.name}
+               productSlug={product.slug}
+               productImage={
+                product.images.find((img) => img.is_primary === 1)?.url ??
+                product.images[0]?.url ??
+                null
+               }
+               />
             </div>
           </div>
 

@@ -45,7 +45,7 @@ export default async function HomePage() {
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-coffee-900 mb-5 leading-tight animate-fade-up">
               آجیل و خشکبار
-              <span className="text-gradient-gold"> تازه و اصل</span>
+              <span className="text-gradient-gold"> داغ و تازه</span>
               <br />
               مستقیم از باغ به سفره شما
             </h1>

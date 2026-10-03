@@ -9,6 +9,7 @@ import {
   UserIcon,
 } from '@/components/icons';
 import MobileMenu from '@/components/MobileMenu';
+import CartCountBadge from '@/components/CartCountBadge';
 
 export default async function Header() {
   const categories = await getCategoryTree();
@@ -78,9 +79,7 @@ export default async function Header() {
               aria-label="سبد خرید"
             >
               <CartIcon className="w-5 h-5 text-coffee-700" />
-              <span className="absolute -top-0.5 -left-0.5 w-4 h-4 rounded-full bg-gold-500 text-coffee-900 text-[10px] font-bold flex items-center justify-center fa-num shadow-sm">
-                ۰
-              </span>
+              <CartCountBadge />
             </Link>
 
             <Link

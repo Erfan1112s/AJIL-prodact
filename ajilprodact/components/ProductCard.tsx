@@ -1,9 +1,10 @@
 // components/ProductCard.tsx
-// کارت محصول با پالت قهوه‌ای و طلایی
+// کارت محصول - فقط نمایش، بدون دکمه افزودن سریع
+// دکمه افزودن به سبد فقط در صفحه تک محصول است
+// تا کاربر بتواند وزن را انتخاب کند
 
 import Image from 'next/image';
 import Link from 'next/link';
-import QuickAddButton from '@/components/QuickAddButton';
 import ProductHeartButton from '@/components/ProductHeartButton';
 import { LeafIcon } from '@/components/icons';
 import type { ProductListItem } from '@/lib/types';
@@ -13,6 +14,7 @@ interface Props {
   priority?: boolean;
 }
 
+// تابع کمکی برای نمایش قیمت با جداکننده فارسی
 function formatPrice(price: number): string {
   return price.toLocaleString('fa-IR');
 }
@@ -23,7 +25,9 @@ export default function ProductCard({ product, priority = false }: Props) {
       href={`/products/${product.slug}`}
       className="group relative block aspect-[3/4] rounded-3xl overflow-hidden shadow-lg shadow-coffee-900/10 hover:shadow-2xl hover:shadow-coffee-900/20 transition-all duration-500 hover:-translate-y-1"
     >
-      {/* پس‌زمینه */}
+      {/* ==========================================
+          تصویر پس‌زمینه
+          ========================================== */}
       {product.primary_image ? (
         <Image
           src={product.primary_image.url}
@@ -37,13 +41,15 @@ export default function ProductCard({ product, priority = false }: Props) {
         <div className="absolute inset-0 bg-gradient-to-br from-coffee-700 to-coffee-900" />
       )}
 
-      {/* گرادیانت تیره */}
+      {/* گرادیانت تیره برای خوانایی متن */}
       <div
         className="absolute inset-0 bg-gradient-to-t from-coffee-900 via-coffee-900/55 to-coffee-900/15"
         aria-hidden="true"
       />
 
-      {/* ردیف بالایی */}
+      {/* ==========================================
+          ردیف بالایی: نشان ویژه و قلب
+          ========================================== */}
       <div className="absolute top-3 right-3 left-3 flex items-start justify-between gap-2 z-10">
         {product.is_featured === 1 ? (
           <div className="px-2.5 py-1 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-coffee-900 text-[10px] font-bold shadow-lg shadow-gold-500/40">
@@ -56,7 +62,9 @@ export default function ProductCard({ product, priority = false }: Props) {
         <ProductHeartButton productId={product.id} />
       </div>
 
-      {/* پیل قیمت */}
+      {/* ==========================================
+          پیل قیمت
+          ========================================== */}
       <div className="absolute top-[calc(100%-11rem)] right-3 z-10">
         <div className="inline-flex items-baseline gap-1.5 bg-white/95 backdrop-blur-md rounded-full px-3 py-1.5 shadow-lg border border-gold-200/50">
           <span className="text-coffee-500 text-[10px] font-medium">از</span>
@@ -67,13 +75,9 @@ export default function ProductCard({ product, priority = false }: Props) {
         </div>
       </div>
 
-      {/* دکمه سبد */}
-      <QuickAddButton
-        productSlug={product.slug}
-        productName={product.name}
-      />
-
-      {/* محتوای پایین */}
+      {/* ==========================================
+          محتوای پایین
+          ========================================== */}
       <div className="absolute bottom-0 right-0 left-0 p-4">
         {/* برچسب دسته */}
         <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold-500/20 backdrop-blur-sm border border-gold-400/30 text-gold-100 text-[10px] font-medium mb-2">
@@ -81,7 +85,7 @@ export default function ProductCard({ product, priority = false }: Props) {
           {product.category.name}
         </div>
 
-        {/* نام */}
+        {/* نام محصول */}
         <h3 className="text-base sm:text-lg font-bold text-cream-50 leading-snug mb-3 line-clamp-2 min-h-[2.6rem]">
           {product.name}
         </h3>
