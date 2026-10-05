@@ -14,16 +14,12 @@ import {
 import { isValidIranMobile } from '@/lib/auth/sms';
 import type { CustomerRow } from '@/lib/types';
 
-// ==========================================
-// تایپ‌های نتیجه
-// ==========================================
-
-type ActionOk<T = Record<string, never>> = { ok: true } & T;
-type ActionErr = { ok: false; error: string; code?: string };
-type ActionResult<T = Record<string, never>> = ActionOk<T> | ActionErr;
+type ActionResult<T = Record<string, never>> =
+  | ({ ok: true } & T)
+  | { ok: false; error: string; code?: string };
 
 // ==========================================
-// 1. درخواست OTP ثبت‌نام
+// مرحله 1: درخواست OTP
 // ==========================================
 
 export async function requestRegisterOtpAction(
@@ -35,12 +31,27 @@ export async function requestRegisterOtpAction(
     return { ok: false, error: 'شماره موبایل نامعتبر است' };
   }
 
-  // چک نکن که شماره وجود دارد یا نه چون اینجا ثبت‌نام است
-  // requestOtp با createIfNotExists=true خودش بررسی می‌کند
-  const result = await requestOtp({
-    phone,
-    createIfNotExists: true,
-  });
+  const [existingRows] = await db.query<
+    Array<{ id: number; password_hash: string | null }>
+  >(
+    `SELECT id, password_hash FROM customers WHERE phone = ? LIMIT 1`,
+    [phone]
+  );
+
+  const existing = (existingRows as Array<{
+    id: number;
+    password_hash: string | null;
+  }>)[0];
+
+  if (existing?.password_hash) {
+    return {
+      ok: false,
+      error: 'این شماره قبلاً ثبت‌نام کرده است. لطفاً وارد شوید.',
+      code: 'ALREADY_REGISTERED',
+    };
+  }
+
+  const result = await requestOtp({ phone, createIfNotExists: true });
 
   if (!result.ok) {
     return { ok: false, error: result.error, code: result.code };
@@ -50,16 +61,14 @@ export async function requestRegisterOtpAction(
 }
 
 // ==========================================
-// 2. تایید OTP و ساخت حساب + تنظیم رمز
+// مرحله 2: تایید OTP
 // ==========================================
 
-export async function verifyRegisterAction(
+export async function verifyRegisterOtpAction(
   formData: FormData
 ): Promise<ActionResult> {
   const phone = String(formData.get('phone') ?? '').trim();
   const code = String(formData.get('code') ?? '').trim();
-  const fullName = String(formData.get('fullName') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
 
   if (!isValidIranMobile(phone)) {
     return { ok: false, error: 'شماره موبایل نامعتبر است' };
@@ -67,6 +76,30 @@ export async function verifyRegisterAction(
 
   if (!/^\d{6}$/.test(code)) {
     return { ok: false, error: 'کد وارد شده باید 6 رقم باشد' };
+  }
+
+  const result = await verifyOtp({ phone, code });
+  if (!result.ok) {
+    return { ok: false, error: result.error, code: result.code };
+  }
+
+  return { ok: true };
+}
+
+// ==========================================
+// مرحله 3: تکمیل اطلاعات (بدون کد ملی)
+// ==========================================
+
+export async function completeRegisterAction(
+  formData: FormData
+): Promise<ActionResult> {
+  const phone = String(formData.get('phone') ?? '').trim();
+  const fullName = String(formData.get('fullName') ?? '').trim();
+  const password = String(formData.get('password') ?? '');
+
+  // اعتبارسنجی
+  if (!isValidIranMobile(phone)) {
+    return { ok: false, error: 'شماره موبایل نامعتبر است' };
   }
 
   if (fullName.length < 3 || fullName.length > 100) {
@@ -81,31 +114,79 @@ export async function verifyRegisterAction(
     return { ok: false, error: 'رمز عبور بیش از حد طولانی است' };
   }
 
-  // بررسی کد
-  const verifyResult = await verifyOtp({ phone, code });
-  if (!verifyResult.ok) {
-    return { ok: false, error: verifyResult.error, code: verifyResult.code };
+  // خواندن مشتری
+  const [rows] = await db.query<
+    Array<{
+      id: number;
+      password_hash: string | null;
+      otp_verified_at: Date | null;
+    }>
+  >(
+    `SELECT id, password_hash, otp_verified_at
+     FROM customers WHERE phone = ? LIMIT 1`,
+    [phone]
+  );
+
+  const customer = (rows as Array<{
+    id: number;
+    password_hash: string | null;
+    otp_verified_at: Date | null;
+  }>)[0];
+
+  if (!customer) {
+    return {
+      ok: false,
+      error: 'شماره تایید نشده است. لطفاً از ابتدا شروع کنید.',
+      code: 'NOT_VERIFIED',
+    };
+  }
+
+  if (customer.password_hash) {
+    return {
+      ok: false,
+      error: 'این شماره قبلاً ثبت‌نام کرده است.',
+      code: 'ALREADY_REGISTERED',
+    };
+  }
+
+  if (!customer.otp_verified_at) {
+    return {
+      ok: false,
+      error: 'کد تایید نشده است. لطفاً از ابتدا شروع کنید.',
+      code: 'NOT_VERIFIED',
+    };
+  }
+
+  // بررسی انقضای تایید (30 دقیقه)
+  const verifiedAt = new Date(customer.otp_verified_at).getTime();
+  const thirtyMinutes = 30 * 60 * 1000;
+  if (Date.now() - verifiedAt > thirtyMinutes) {
+    return {
+      ok: false,
+      error: 'زمان تایید به پایان رسیده. لطفاً از ابتدا شروع کنید.',
+      code: 'VERIFICATION_EXPIRED',
+    };
   }
 
   // هش رمز
   const passwordHash = await hashPassword(password);
 
-  // به‌روزرسانی مشتری با نام و رمز
+  // به‌روزرسانی
   await db.query(
     `UPDATE customers
      SET full_name = ?, password_hash = ?
      WHERE id = ?`,
-    [fullName, passwordHash, verifyResult.customerId]
+    [fullName, passwordHash, customer.id]
   );
 
   // ساخت session
-  await setCustomerSessionCookie(verifyResult.customerId);
+  await setCustomerSessionCookie(customer.id);
 
   return { ok: true };
 }
 
 // ==========================================
-// 3. ورود با رمز عبور
+// ورود
 // ==========================================
 
 export async function customerLoginAction(
@@ -121,19 +202,13 @@ export async function customerLoginAction(
   }
 
   const [rows] = await db.query<CustomerRow[]>(
-    `SELECT id, password_hash, is_active
-     FROM customers
-     WHERE phone = ?
-     LIMIT 1`,
+    `SELECT id, password_hash, is_active FROM customers WHERE phone = ? LIMIT 1`,
     [phone]
   );
 
-  const list = rows as CustomerRow[];
-  const customer = list[0];
+  const customer = (rows as CustomerRow[])[0];
 
-  // اگر کاربر وجود ندارد یا رمز تنظیم نکرده
   if (!customer || !customer.password_hash) {
-    // برای جلوگیری از timing attack، یک verify الکی انجام بده
     await verifyPassword(password, 'aa:bb');
     return { ok: false, error: genericError };
   }
@@ -152,7 +227,7 @@ export async function customerLoginAction(
 }
 
 // ==========================================
-// 4. درخواست OTP بازیابی رمز
+// درخواست OTP بازیابی
 // ==========================================
 
 export async function requestResetOtpAction(
@@ -164,12 +239,27 @@ export async function requestResetOtpAction(
     return { ok: false, error: 'شماره موبایل نامعتبر است' };
   }
 
-  // این بار createIfNotExists=false است
-  // چون می‌خواهیم فقط برای حساب‌های موجود بازیابی کنیم
-  const result = await requestOtp({
-    phone,
-    createIfNotExists: false,
-  });
+  const [existingRows] = await db.query<
+    Array<{ id: number; password_hash: string | null }>
+  >(
+    `SELECT id, password_hash FROM customers WHERE phone = ? LIMIT 1`,
+    [phone]
+  );
+
+  const existing = (existingRows as Array<{
+    id: number;
+    password_hash: string | null;
+  }>)[0];
+
+  if (!existing || !existing.password_hash) {
+    return {
+      ok: false,
+      error: 'این شماره ثبت‌نام نکرده است. لطفاً ابتدا ثبت‌نام کنید.',
+      code: 'NOT_REGISTERED',
+    };
+  }
+
+  const result = await requestOtp({ phone, createIfNotExists: false });
 
   if (!result.ok) {
     return { ok: false, error: result.error, code: result.code };
@@ -179,7 +269,7 @@ export async function requestResetOtpAction(
 }
 
 // ==========================================
-// 5. تایید OTP و تنظیم رمز جدید
+// تایید OTP و تنظیم رمز جدید
 // ==========================================
 
 export async function resetPasswordAction(
@@ -201,23 +291,23 @@ export async function resetPasswordAction(
     return { ok: false, error: 'رمز عبور باید حداقل 8 کاراکتر باشد' };
   }
 
-  const verifyResult = await verifyOtp({ phone, code });
-  if (!verifyResult.ok) {
-    return { ok: false, error: verifyResult.error, code: verifyResult.code };
+  const result = await verifyOtp({ phone, code });
+  if (!result.ok) {
+    return { ok: false, error: result.error, code: result.code };
   }
 
   const passwordHash = await hashPassword(password);
 
   await db.query(
     `UPDATE customers SET password_hash = ? WHERE id = ?`,
-    [passwordHash, verifyResult.customerId]
+    [passwordHash, result.customerId]
   );
 
   return { ok: true };
 }
 
 // ==========================================
-// 6. خروج مشتری
+// خروج
 // ==========================================
 
 export async function customerLogoutAction(): Promise<void> {
@@ -225,32 +315,24 @@ export async function customerLogoutAction(): Promise<void> {
 }
 
 // ==========================================
-// 7. خواندن اطلاعات مشتری فعلی
+// خواندن مشتری فعلی
 // ==========================================
 
 export async function getCurrentCustomerAction(): Promise<
   ActionResult<{ customer: CustomerRow }>
 > {
   const id = await getCurrentCustomerId();
-  if (!id) {
-    return { ok: false, error: 'وارد نشده‌اید' };
-  }
+  if (!id) return { ok: false, error: 'وارد نشده‌اید' };
 
   const [rows] = await db.query<CustomerRow[]>(
     `SELECT id, phone, full_name, email, default_address,
             order_count, last_order_at, is_active, created_at
-     FROM customers
-     WHERE id = ? AND is_active = 1
-     LIMIT 1`,
+     FROM customers WHERE id = ? AND is_active = 1 LIMIT 1`,
     [id]
   );
 
-  const list = rows as CustomerRow[];
-  const customer = list[0];
-
-  if (!customer) {
-    return { ok: false, error: 'حساب یافت نشد' };
-  }
+  const customer = (rows as CustomerRow[])[0];
+  if (!customer) return { ok: false, error: 'حساب یافت نشد' };
 
   return { ok: true, customer };
 }

@@ -1,13 +1,9 @@
 // components/auth/RegisterForm.tsx
 // فرم ثبت‌نام سه مرحله‌ای
-// مرحله 1: شماره موبایل
-// مرحله 2: تایید کد OTP
-// مرحله 3: نام + کد ملی + رمز عبور
 
 'use client';
 
 import { useState, useTransition, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import AuthFormHeader from '@/components/auth/AuthFormHeader';
 import StepDots from '@/components/auth/StepDots';
 import FormField from '@/components/auth/FormField';
@@ -22,7 +18,6 @@ import {
   validatePhone,
   validateOtp,
   validateFullName,
-  validateNationalCode,
   validatePassword,
 } from '@/lib/auth/validators';
 import {
@@ -40,29 +35,21 @@ const STEP_NUMBERS: Record<Step, number> = {
 };
 
 export default function RegisterForm() {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const countdown = useOtpCountdown();
 
-  // state متمرکز
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [fullName, setFullName] = useState('');
-  const [nationalCode, setNationalCode] = useState('');
   const [password, setPassword] = useState('');
 
-  // خطاها
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [fullNameError, setFullNameError] = useState<string | null>(null);
-  const [nationalCodeError, setNationalCodeError] = useState<string | null>(
-    null
-  );
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // برای فوکوس خودکار
   const fullNameRef = useRef<HTMLInputElement>(null);
 
   // ==========================================
@@ -82,13 +69,18 @@ export default function RegisterForm() {
     fd.set('phone', phone);
 
     startTransition(async () => {
-      const result = await requestRegisterOtpAction(fd);
-      if (result.ok) {
-        setStep('verify');
-        setCode('');
-        countdown.start(120);
-      } else {
-        setFormError(result.error);
+      try {
+        const result = await requestRegisterOtpAction(fd);
+        if (result.ok) {
+          setStep('verify');
+          setCode('');
+          countdown.start(120);
+        } else {
+          setFormError(result.error);
+        }
+      } catch (err) {
+        console.error(err);
+        setFormError('خطای غیرمنتظره. لطفاً دوباره تلاش کنید.');
       }
     });
   }
@@ -112,15 +104,18 @@ export default function RegisterForm() {
     fd.set('code', code);
 
     startTransition(async () => {
-      const result = await verifyRegisterOtpAction(fd);
-      if (result.ok) {
-        setStep('details');
-        setFormError(null);
-        // فوکوس روی فیلد نام بعد از رندر
-        setTimeout(() => fullNameRef.current?.focus(), 50);
-      } else {
-        setCodeError(result.error);
-        setCode('');
+      try {
+        const result = await verifyRegisterOtpAction(fd);
+        if (result.ok) {
+          setStep('details');
+          setTimeout(() => fullNameRef.current?.focus(), 50);
+        } else {
+          setCodeError(result.error);
+          setCode('');
+        }
+      } catch (err) {
+        console.error(err);
+        setFormError('خطای غیرمنتظره. لطفاً دوباره تلاش کنید.');
       }
     });
   }
@@ -131,45 +126,38 @@ export default function RegisterForm() {
   function handleComplete(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
+    setFullNameError(null);
+    setPasswordError(null);
 
     const nameErr = validateFullName(fullName);
-    const ncErr = validateNationalCode(nationalCode);
     const pwErr = validatePassword(password);
 
     setFullNameError(nameErr);
-    setNationalCodeError(ncErr);
     setPasswordError(pwErr);
-
-    if (nameErr || ncErr || pwErr) return;
+    if (nameErr || pwErr) return;
 
     const fd = new FormData();
     fd.set('phone', phone);
     fd.set('fullName', fullName);
-    fd.set('nationalCode', nationalCode);
     fd.set('password', password);
 
     startTransition(async () => {
-      const result = await completeRegisterAction(fd);
-      if (result.ok) {
-        router.push('/profile');
-        router.refresh();
-      } else {
-        setFormError(result.error);
-        // اگر خطا مربوط به کد ملی است، آن را کنار فیلد نشان بده
-        if (result.code === 'INVALID_NATIONAL') {
-          setNationalCodeError(result.error);
-          setFormError(null);
-        } else if (result.code === 'NATIONAL_DUPLICATE') {
-          setNationalCodeError(result.error);
-          setFormError(null);
+      try {
+        const result = await completeRegisterAction(fd);
+
+        if (result.ok) {
+          // ریدایرکت سخت - تضمینی
+          window.location.href = '/profile';
+        } else {
+          setFormError(result.error);
         }
+      } catch (err) {
+        console.error(err);
+        setFormError('خطای غیرمنتظره. لطفاً دوباره تلاش کنید.');
       }
     });
   }
 
-  // ==========================================
-  // بازگشت به مرحله قبل
-  // ==========================================
   function goBack() {
     setFormError(null);
     if (step === 'verify') {
@@ -181,15 +169,10 @@ export default function RegisterForm() {
     }
   }
 
-  // ==========================================
-  // رندر
-  // ==========================================
-
   const stepNumber = STEP_NUMBERS[step];
 
   return (
     <div className="space-y-6">
-      {/* نشانگر مرحله */}
       <StepDots current={stepNumber} total={3} />
 
       {/* مرحله 1 */}
@@ -216,9 +199,7 @@ export default function RegisterForm() {
 
           {formError && <Alert type="error">{formError}</Alert>}
 
-          <SubmitButton loading={isPending} disabled={phone.length !== 11}>
-            دریافت کد تایید
-          </SubmitButton>
+          <SubmitButton loading={isPending}>دریافت کد تایید</SubmitButton>
         </form>
       )}
 
@@ -248,9 +229,7 @@ export default function RegisterForm() {
             error={Boolean(codeError)}
           />
 
-          {codeError && (
-            <Alert type="error">{codeError}</Alert>
-          )}
+          {codeError && <Alert type="error">{codeError}</Alert>}
 
           <div className="text-center">
             <CountdownText
@@ -261,12 +240,7 @@ export default function RegisterForm() {
             />
           </div>
 
-          <SubmitButton
-            loading={isPending}
-            disabled={code.length !== 6}
-          >
-            تایید کد
-          </SubmitButton>
+          <SubmitButton loading={isPending}>تایید کد</SubmitButton>
 
           <button
             type="button"
@@ -284,13 +258,13 @@ export default function RegisterForm() {
         <form
           onSubmit={handleComplete}
           className="space-y-5 animate-fade-up"
+          noValidate
         >
           <AuthFormHeader
             title="تکمیل اطلاعات حساب"
             desc="اطلاعات زیر برای ساخت حساب شما لازم است."
           />
 
-          {/* نشان تایید شماره */}
           <Alert type="success" title="شماره موبایل تایید شد">
             <span className="fa-num" dir="ltr">
               {phone}
@@ -313,27 +287,6 @@ export default function RegisterForm() {
             error={fullNameError}
           />
 
-          <FormField
-            label="کد ملی"
-            name="nationalCode"
-            type="text"
-            inputMode="numeric"
-            dir="ltr"
-            placeholder="1234567890"
-            value={nationalCode}
-            onChange={(e) => {
-              setNationalCode(
-                e.target.value.replace(/\D/g, '').slice(0, 10)
-              );
-              if (nationalCodeError) setNationalCodeError(null);
-            }}
-            disabled={isPending}
-            centered
-            faNumeric
-            error={nationalCodeError}
-            hint="کد ملی باید متعلق به صاحب شماره موبایل بالا باشد."
-          />
-
           <PasswordField
             value={password}
             onChange={(value) => {
@@ -347,22 +300,7 @@ export default function RegisterForm() {
 
           {formError && <Alert type="error">{formError}</Alert>}
 
-          {/* هشدار امنیتی */}
-          <Alert type="info" title="توجه">
-            کد ملی وارد شده باید با نام صاحب شماره موبایل مطابقت داشته
-            باشد. این برای جلوگیری از سوءاستفاده است.
-          </Alert>
-
-          <SubmitButton
-            loading={isPending}
-            disabled={
-              fullName.length < 3 ||
-              nationalCode.length !== 10 ||
-              password.length < 8
-            }
-          >
-            ساخت حساب
-          </SubmitButton>
+          <SubmitButton loading={isPending}>ساخت حساب</SubmitButton>
 
           <button
             type="button"

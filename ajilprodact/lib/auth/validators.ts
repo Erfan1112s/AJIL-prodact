@@ -1,6 +1,5 @@
 // lib/auth/validators.ts
 // اعتبارسنجی‌های مشترک احراز هویت
-// این فایل هم در کلاینت و هم در سرور استفاده می‌شود
 
 // ==========================================
 // شماره موبایل
@@ -41,32 +40,6 @@ export function validateFullName(name: string): string | null {
   if (clean.length < 3) return 'نام باید حداقل 3 کاراکتر باشد';
   if (clean.length > 100) return 'نام نمی‌تواند بیش از 100 کاراکتر باشد';
   return null;
-}
-
-// ==========================================
-// کد ملی
-// ==========================================
-
-export function validateNationalCode(code: string): string | null {
-  const clean = code.replace(/\D/g, '');
-  if (!clean) return 'کد ملی را وارد کنید';
-  if (clean.length !== 10) return 'کد ملی باید 10 رقم باشد';
-
-  // بررسی ارقام تکراری
-  if (/^(\d)\1{9}$/.test(clean)) {
-    return 'کد ملی نامعتبر است';
-  }
-
-  // الگوریتم رسمی بررسی رقم کنترل
-  const check = Number(clean[9]);
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    sum += Number(clean[i]) * (10 - i);
-  }
-  const remainder = sum % 11;
-  const valid = remainder < 2 ? check === remainder : check === 11 - remainder;
-
-  return valid ? null : 'کد ملی وارد شده معتبر نیست';
 }
 
 // ==========================================

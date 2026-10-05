@@ -75,6 +75,27 @@ const PasswordField = forwardRef<HTMLInputElement, Props>(
 
     const strength = showStrength ? getPasswordStrength(value) : null;
 
+    // رنگ نوار پر شده بر اساس قدرت
+    const getFillGradient = (score: number): string => {
+      switch (score) {
+        case 1:
+          return 'from-red-500 to-red-400';
+        case 2:
+          return 'from-gold-500 to-gold-400';
+        case 3:
+          return 'from-brand-500 to-gold-400';
+        case 4:
+          return 'from-brand-600 to-brand-500';
+        default:
+          return 'from-cream-200 to-cream-200';
+      }
+    };
+
+    // درصد عرض نوار پر شده
+    const getFillWidth = (score: number): string => {
+      return `${(score / 4) * 100}%`;
+    };
+
     return (
       <div>
         <FormField
@@ -107,26 +128,34 @@ const PasswordField = forwardRef<HTMLInputElement, Props>(
           }
         />
 
-        {/* نشانگر قدرت */}
+        {/* نشانگر قدرت - یک خط پیوسته */}
         {showStrength && value.length > 0 && strength && strength.label && (
-          <div className="flex items-center gap-2 mt-2 animate-fade-in">
-            <div className="flex-1 flex gap-1">
-              {[1, 2, 3, 4].map((i) => (
+          <div className="mt-2.5 animate-fade-in">
+            <div className="flex items-center gap-3">
+              {/* نوار پایه */}
+              <div className="flex-1 h-1.5 rounded-full bg-cream-200 overflow-hidden">
+                {/* نوار پر شده */}
                 <div
-                  key={i}
-                  className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-                    i <= strength.score ? strength.color : 'bg-cream-200'
-                  }`}
+                  className={`h-full rounded-full bg-gradient-to-l transition-all duration-500 ${getFillGradient(
+                    strength.score
+                  )}`}
+                  style={{ width: getFillWidth(strength.score) }}
                 />
-              ))}
+              </div>
+
+              {/* برچسب */}
+              <span
+                className={`text-[11px] font-bold shrink-0 ${
+                  strength.score >= 3
+                    ? 'text-brand-700'
+                    : strength.score === 2
+                      ? 'text-gold-700'
+                      : 'text-red-600'
+                }`}
+              >
+                {strength.label}
+              </span>
             </div>
-            <span
-              className={`text-[11px] font-medium ${
-                strength.score >= 3 ? 'text-brand-600' : 'text-coffee-500'
-              }`}
-            >
-              {strength.label}
-            </span>
           </div>
         )}
       </div>

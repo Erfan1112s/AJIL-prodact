@@ -1,20 +1,32 @@
 -- db/schema.sql
--- اسکیمای کامل فاز یک پروژه کاتالوگ آجیل و خشکبار
--- این فایل را با دستور mysql -u root -p ajil_catalog < db/schema.sql اجرا کنید
-
--- تمام جدول‌ها با این تنظیمات ساخته می‌شوند:
--- ENGINE=InnoDB: موتور تراکنشی
--- CHARSET=utf8mb4: پشتیبانی از فارسی و ایموجی
--- COLLATE=utf8mb4_unicode_ci: مقایسه و مرتب‌سازی درست فارسی
+-- اسکیمای کامل پروژه کاتالوگ آجیل و خشکبار
+-- اجرا: mariadb -u root ajil_catalog < db/schema.sql
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ==========================================
+-- حذف جدول‌های موجود (برای اجرای مجدد)
+-- ترتیب حذف: معکوس ترتیب ساخت
+-- ==========================================
+DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS branch_inventory;
+DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS batches;
+DROP TABLE IF EXISTS product_images;
+DROP TABLE IF EXISTS product_variants;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS branches;
+DROP TABLE IF EXISTS admin_users;
+
+SET FOREIGN_KEY_CHECKS = 1;
 
 
 -- ==========================================
 -- جدول 1: categories
 -- دسته‌بندی محصولات به صورت درختی
--- مثال: خشکبار > آجیل > پسته
 -- ==========================================
 CREATE TABLE categories (
   id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -39,9 +51,29 @@ CREATE TABLE categories (
 
 
 -- ==========================================
--- جدول 2: products
--- اطلاعات پایه هر محصول (بدون قیمت)
--- قیمت در جدول product_variants است
+-- جدول 2: branches
+-- شعبات فیزیکی فروشگاه
+-- ==========================================
+CREATE TABLE branches (
+  id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name        VARCHAR(100) NOT NULL,
+  slug        VARCHAR(120) NOT NULL,
+  address     TEXT NULL,
+  phone       VARCHAR(15) NULL,
+  lat         DECIMAL(10, 7) NULL,
+  lng         DECIMAL(10, 7) NULL,
+  is_active   TINYINT(1) NOT NULL DEFAULT 1,
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_branches_slug (slug),
+  KEY idx_branches_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ==========================================
+-- جدول 3: products
+-- اطلاعات پایه محصول (قیمت در product_variants)
 -- ==========================================
 CREATE TABLE products (
   id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -69,10 +101,8 @@ CREATE TABLE products (
 
 
 -- ==========================================
--- جدول 3: product_variants
--- وزن‌ها و قیمت‌های هر محصول
--- مثال: پسته اکبری، 250 گرم، 450000 تومان
--- قیمت اینجاست چون هفتگی تغییر می‌کند
+-- جدول 4: product_variants
+-- وزن و قیمت هر محصول
 -- ==========================================
 CREATE TABLE product_variants (
   id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -96,9 +126,8 @@ CREATE TABLE product_variants (
 
 
 -- ==========================================
--- جدول 4: product_images
--- تصاویر هر محصول
--- فقط URL ذخیره می‌شود، فایل روی سرور ذخیره‌سازی ابری است
+-- جدول 5: product_images
+-- تصاویر محصولات (فقط URL)
 -- ==========================================
 CREATE TABLE product_images (
   id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -119,9 +148,8 @@ CREATE TABLE product_images (
 
 
 -- ==========================================
--- جدول 5: batches
--- شناسنامه هر بچ تولید
--- از این جدول برای نمایش تازگی محصول استفاده می‌شود
+-- جدول 6: batches
+-- شناسنامه بچ تولید
 -- ==========================================
 CREATE TABLE batches (
   id               INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -145,27 +173,6 @@ CREATE TABLE batches (
     FOREIGN KEY (product_id) REFERENCES products(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- ==========================================
--- جدول 6: branches
--- شعب فیزیکی فروشگاه
--- ==========================================
-CREATE TABLE branches (
-  id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  name        VARCHAR(100) NOT NULL,
-  slug        VARCHAR(120) NOT NULL,
-  address     TEXT NULL,
-  phone       VARCHAR(15) NULL,
-  lat         DECIMAL(10, 7) NULL,
-  lng         DECIMAL(10, 7) NULL,
-  is_active   TINYINT(1) NOT NULL DEFAULT 1,
-  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_branches_slug (slug),
-  KEY idx_branches_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -197,7 +204,6 @@ CREATE TABLE branch_inventory (
 -- ==========================================
 -- جدول 8: admin_users
 -- کاربران پنل ادمین
--- رمز با bcrypt یا مشابه هش می‌شود، هرگز plain text ذخیره نمی‌شود
 -- ==========================================
 CREATE TABLE admin_users (
   id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -216,13 +222,46 @@ CREATE TABLE admin_users (
 
 
 -- ==========================================
--- جدول 9: orders
+-- جدول 9: customers
+-- مشتریان فروشگاه
+-- ==========================================
+CREATE TABLE customers (
+  id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  phone             VARCHAR(15) NOT NULL,
+  national_code     VARCHAR(10) NULL,
+  full_name         VARCHAR(100) NULL,
+  email             VARCHAR(100) NULL,
+  password_hash     VARCHAR(255) NULL,
+  otp_code          VARCHAR(6) NULL,
+  otp_expires_at    TIMESTAMP NULL,
+  otp_attempts      TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  otp_last_sent_at  TIMESTAMP NULL,
+  otp_verified_at   TIMESTAMP NULL,
+  default_address   TEXT NULL,
+  admin_note        TEXT NULL,
+  order_count       INT UNSIGNED NOT NULL DEFAULT 0,
+  last_order_at     TIMESTAMP NULL,
+  is_active         TINYINT(1) NOT NULL DEFAULT 1,
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_customers_phone (phone),
+  KEY idx_customers_national (national_code),
+  KEY idx_customers_name (full_name),
+  KEY idx_customers_last_order (last_order_at),
+  KEY idx_customers_active (is_active),
+  KEY idx_customers_otp_expires (otp_expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ==========================================
+-- جدول 10: orders
 -- سفارشات مشتریان
--- دو حالت: خرید آنلاین یا خرید حضوری از شعبه
 -- ==========================================
 CREATE TABLE orders (
   id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
   order_number    VARCHAR(20) NOT NULL,
+  customer_id     INT UNSIGNED NULL,
   customer_name   VARCHAR(100) NOT NULL,
   customer_phone  VARCHAR(15) NOT NULL,
   customer_email  VARCHAR(100) NULL,
@@ -246,9 +285,14 @@ CREATE TABLE orders (
   PRIMARY KEY (id),
   UNIQUE KEY uk_orders_number (order_number),
   KEY idx_orders_status (status),
+  KEY idx_orders_customer (customer_id),
   KEY idx_orders_phone (customer_phone),
   KEY idx_orders_created (created_at),
   KEY idx_orders_branch (branch_id),
+  CONSTRAINT fk_orders_customer
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
   CONSTRAINT fk_orders_branch
     FOREIGN KEY (branch_id) REFERENCES branches(id)
     ON DELETE SET NULL
@@ -257,10 +301,8 @@ CREATE TABLE orders (
 
 
 -- ==========================================
--- جدول 10: order_items
--- اقلام هر سفارش
--- نام و قیمت محصول snapshot می‌شوند
--- یعنی اگر بعدا محصول تغییر کرد، سفارش قدیمی دست‌نخورده می‌ماند
+-- جدول 11: order_items
+-- اقلام سفارش (snapshot داده)
 -- ==========================================
 CREATE TABLE order_items (
   id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -288,37 +330,3 @@ CREATE TABLE order_items (
     ON DELETE RESTRICT
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ==========================================
--- جدول 9: customers
--- مشتریان فروشگاه
--- ==========================================
-CREATE TABLE customers (
-  id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  phone             VARCHAR(15) NOT NULL,
-  full_name         VARCHAR(100) NULL,
-  email             VARCHAR(100) NULL,
-  password_hash     VARCHAR(255) NULL,
-  otp_code          VARCHAR(6) NULL,
-  otp_expires_at    TIMESTAMP NULL,
-  otp_attempts      TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  otp_last_sent_at  TIMESTAMP NULL,
-  default_address   TEXT NULL,
-  admin_note        TEXT NULL,
-  national_code     VARCHAR(10) NULL,
-otp_verified_at   TIMESTAMP NULL,
-  order_count       INT UNSIGNED NOT NULL DEFAULT 0,
-  last_order_at     TIMESTAMP NULL,
-  is_active         TINYINT(1) NOT NULL DEFAULT 1,
-  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_customers_phone (phone),
-  KEY idx_customers_name (full_name),
-  KEY idx_customers_last_order (last_order_at),
-  KEY idx_customers_active (is_active),
-  KEY idx_customers_otp_expires (otp_expires_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
-SET FOREIGN_KEY_CHECKS = 1;
