@@ -1,15 +1,12 @@
 // components/Header.tsx
-// نوار بالای سایت با پالت قهوه‌ای و طلایی
+// نوار بالای سایت
 
 import Link from 'next/link';
 import { getCategoryTree } from '@/lib/queries/categories';
-import {
-  CartIcon,
-  PhoneIcon,
-  UserIcon,
-} from '@/components/icons';
+import { CartIcon, PhoneIcon } from '@/components/icons';
 import MobileMenu from '@/components/MobileMenu';
 import CartCountBadge from '@/components/CartCountBadge';
+import CustomerMenuButton from '@/components/CustomerMenuButton';
 
 export default async function Header() {
   const categories = await getCategoryTree();
@@ -73,6 +70,7 @@ export default async function Header() {
 
           {/* آیکون‌ها */}
           <div className="flex items-center gap-1">
+            {/* سبد خرید */}
             <Link
               href="/cart"
               className="relative p-2 hover:bg-coffee-100 rounded-lg transition-colors"
@@ -82,14 +80,10 @@ export default async function Header() {
               <CartCountBadge />
             </Link>
 
-            <Link
-              href="/admin"
-              className="hidden sm:block p-2 hover:bg-coffee-100 rounded-lg transition-colors"
-              aria-label="ورود"
-            >
-              <UserIcon className="w-5 h-5 text-coffee-700" />
-            </Link>
+            {/* حساب کاربری - حالا به مشتری وصل است، نه ادمین */}
+            <CustomerMenuButton />
 
+            {/* منوی موبایل */}
             <MobileMenu categories={categories} />
           </div>
         </div>

@@ -152,13 +152,17 @@ export async function requestOtp(
   if (existing) {
     // به‌روزرسانی کد
     await db.query(
-      `UPDATE customers
-       SET otp_code = ?,
-           otp_expires_at = ?,
-           otp_attempts = 0,
-           otp_last_sent_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [code, expiresAt, existing.id]
+  // موفق: پاک کردن کد و ثبت زمان تایید
+  await db.query(
+    `UPDATE customers
+     SET otp_code = NULL,
+         otp_expires_at = NULL,
+         otp_attempts = 0,
+         otp_verified_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [customer.id]
+
+  return { ok: true, customerId: customer.id };
     );
   } else {
     // ساخت کاربر جدید

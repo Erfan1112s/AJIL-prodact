@@ -305,6 +305,8 @@ CREATE TABLE customers (
   otp_last_sent_at  TIMESTAMP NULL,
   default_address   TEXT NULL,
   admin_note        TEXT NULL,
+  national_code     VARCHAR(10) NULL,
+otp_verified_at   TIMESTAMP NULL,
   order_count       INT UNSIGNED NOT NULL DEFAULT 0,
   last_order_at     TIMESTAMP NULL,
   is_active         TINYINT(1) NOT NULL DEFAULT 1,
