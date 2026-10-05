@@ -4,17 +4,24 @@
 
 SET NAMES utf8mb4;
 
--- پاک کردن داده‌های قبلی (به ترتیب معکوس وابستگی)
-DELETE FROM order_items;
-DELETE FROM orders;
-DELETE FROM branch_inventory;
-DELETE FROM batches;
-DELETE FROM product_images;
-DELETE FROM product_variants;
-DELETE FROM products;
-DELETE FROM categories;
-DELETE FROM branches;
-DELETE FROM admin_users;
+-- ==========================================
+-- پاک‌سازی به ترتیب معکوس وابستگی
+-- ==========================================
+SET FOREIGN_KEY_CHECKS = 0;
+
+TRUNCATE TABLE order_items;
+TRUNCATE TABLE orders;
+TRUNCATE TABLE branch_inventory;
+TRUNCATE TABLE customers;
+TRUNCATE TABLE batches;
+TRUNCATE TABLE product_images;
+TRUNCATE TABLE product_variants;
+TRUNCATE TABLE products;
+TRUNCATE TABLE categories;
+TRUNCATE TABLE branches;
+TRUNCATE TABLE admin_users;
+
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- بازنشانی AUTO_INCREMENT
 ALTER TABLE order_items AUTO_INCREMENT = 1;
@@ -48,9 +55,7 @@ INSERT INTO categories (id, name, slug, description, parent_id, sort_order) VALU
 -- شعبات
 -- ==========================================
 INSERT INTO branches (id, name, slug, address, phone, lat, lng) VALUES
-  (1, 'شعبه مرکزی', 'markazi', 'تهران، خیابان ولیعصر، پلاک 1200', '02188776655', 35.7448000, 51.4098000),
-  (2, 'شعبه غرب', 'gharb', 'تهران، شهرک غرب، بلوار دادمان', '02188776656', 35.7701000, 51.3678000),
-  (3, 'شعبه شرق', 'shargh', 'تهران، تهرانپارس، فلکه دوم', '02188776657', 35.7345000, 51.5278000);
+  (1, 'شعبه مرکزی', 'markazi', 'اصفهان، خیابان چهارباغ بالا، پلاک ۱۲۰', '03188776655', 32.6546000, 51.6680000);
 
 
 -- ==========================================
@@ -123,12 +128,11 @@ INSERT INTO product_variants (product_id, weight_gram, price, compare_price, sku
 -- URLهای نمونه (در فاز 2 با ArvanCloud جایگزین می‌شوند)
 -- ==========================================
 INSERT INTO product_images (product_id, url, alt, sort_order, is_primary) VALUES
-  (1, '/images/products/peste-akbari-1.jpg', 'پسته اکبری ممتاز', 1, 1),
-  (1, '/images/products/peste-akbari-2.jpg', 'پسته اکبری نمای نزدیک', 2, 0),
-  (2, '/images/products/badam-darakhti-1.jpg', 'بادام درختی خام', 1, 1),
-  (3, '/images/products/fandogh-1.jpg', 'فندق با پوست', 1, 1),
-  (4, '/images/products/badam-hendi-1.jpg', 'بادام هندی شور', 1, 1),
-  (5, '/images/products/tokhme-1.jpg', 'تخمه آفتابگردان', 1, 1);
+  (1, '/images/products/پسته اکبری.jpg', 'پسته اکبری ممتاز', 1, 1),
+  (2, '/images/products/بادام درختی خام.jpg', 'بادام درختی خام', 1, 1),
+  (3, '/images/products/فندق.jpg', 'فندق با پوست', 1, 1),
+  (4, '/images/products/بادام هندی.jpg', 'بادام هندی شور', 1, 1),
+  (5, '/images/products/تخمه افتاب گردون.jpg', 'تخمه آفتابگردان', 1, 1);
 
 
 -- ==========================================
@@ -155,25 +159,19 @@ VALUES
 -- ==========================================
 INSERT INTO branch_inventory (branch_id, variant_id, stock) VALUES
   -- شعبه مرکزی (branch 1)
-  (1, 1, 45), (1, 2, 30), (1, 3, 15),
-  (1, 4, 50), (1, 5, 35), (1, 6, 20),
-  (1, 7, 25), (1, 8, 18),
-  (1, 9, 40), (1, 10, 22),
-  (1, 11, 60), (1, 12, 55),
-
-  -- شعبه غرب (branch 2)
-  (2, 1, 20), (2, 2, 15), (2, 3, 8),
-  (2, 4, 30), (2, 5, 20), (2, 6, 12),
-  (2, 7, 10), (2, 8, 5),
-  (2, 9, 18), (2, 10, 10),
-  (2, 11, 40), (2, 12, 30),
-
-  -- شعبه شرق (branch 3)
-  (3, 1, 0),  (3, 2, 5),  (3, 3, 2),
-  (3, 4, 12), (3, 5, 8),  (3, 6, 4),
-  (3, 7, 3),  (3, 8, 0),
-  (3, 9, 6),  (3, 10, 4),
-  (3, 11, 20), (3, 12, 15);
+  -- variant_id 1 تا 12 به ترتیب همان محصولات و وزن‌ها هستند
+  (1, 1, 45),
+  (1, 2, 30),
+  (1, 3, 15),
+  (1, 4, 50),
+  (1, 5, 35),
+  (1, 6, 20),
+  (1, 7, 25),
+  (1, 8, 18),
+  (1, 9, 40),
+  (1, 10, 22),
+  (1, 11, 60),
+  (1, 12, 55);
 
 
 -- ==========================================
@@ -182,4 +180,4 @@ INSERT INTO branch_inventory (branch_id, variant_id, stock) VALUES
 -- رمز: بعدا با bcrypt هش می‌شود، الان placeholder
 -- ==========================================
 INSERT INTO admin_users (username, password_hash, full_name, role) VALUES
-  ('admin', '$2b$10$PLACEHOLDER_REPLACE_LATER', 'مدیر سیستم', 'SUPER_ADMIN');
+  ('admin', 'fbd7798974ae03f3b3af95d9f9261344:9cf95aeca92f030fe8d222436441f728d1de47c1f0b92e10b3dfde53b72bc3f9b82abb44476be4cd64a2c78eac7600bdca5149cf08e12f6b855ad0a4b8b86753', 'مدیر سیستم', 'SUPER_ADMIN');

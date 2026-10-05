@@ -289,5 +289,34 @@ CREATE TABLE order_items (
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ==========================================
+-- جدول 9: customers
+-- مشتریان فروشگاه
+-- ==========================================
+CREATE TABLE customers (
+  id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  phone             VARCHAR(15) NOT NULL,
+  full_name         VARCHAR(100) NULL,
+  email             VARCHAR(100) NULL,
+  password_hash     VARCHAR(255) NULL,
+  otp_code          VARCHAR(6) NULL,
+  otp_expires_at    TIMESTAMP NULL,
+  otp_attempts      TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  otp_last_sent_at  TIMESTAMP NULL,
+  default_address   TEXT NULL,
+  admin_note        TEXT NULL,
+  order_count       INT UNSIGNED NOT NULL DEFAULT 0,
+  last_order_at     TIMESTAMP NULL,
+  is_active         TINYINT(1) NOT NULL DEFAULT 1,
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_customers_phone (phone),
+  KEY idx_customers_name (full_name),
+  KEY idx_customers_last_order (last_order_at),
+  KEY idx_customers_active (is_active),
+  KEY idx_customers_otp_expires (otp_expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 SET FOREIGN_KEY_CHECKS = 1;

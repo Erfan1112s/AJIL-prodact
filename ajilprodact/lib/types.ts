@@ -97,11 +97,17 @@ export interface BranchInventoryRow extends RowDataPacket {
   updated_at: Date;
 }
 
-export interface CustomerRow extends RowDataPacket {
+// ردیف جدول customers (به‌روزرسانی‌شده)
+export interface CustomerRow {
   id: number;
   phone: string;
   full_name: string | null;
   email: string | null;
+  password_hash: string | null;
+  otp_code: string | null;
+  otp_expires_at: Date | null;
+  otp_attempts: number;
+  otp_last_sent_at: Date | null;
   default_address: string | null;
   admin_note: string | null;
   order_count: number;
