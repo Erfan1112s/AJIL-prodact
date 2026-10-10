@@ -11,6 +11,10 @@
 
 - mariadb -u db-username -p pas db-name < db/schema.sql
 
+- ادمین 
+- INSERT INTO admin_users (username, password_hash, full_name, role) VALUES
+  ('admin', 'fbd7798974ae03f3b3af95d9f9261344:9cf95aeca92f030fe8d222436441f728d1de47c1f0b92e10b3dfde53b72bc3f9b82abb44476be4cd64a2c78eac7600bdca5149cf08e12f6b855ad0a4b8b86753', 'مدیر سیستم', 'SUPER_ADMIN');
+
 feat: پیاده‌سازی کامل فاز یک کاتالوگ آجیل
 
 زیرساخت:

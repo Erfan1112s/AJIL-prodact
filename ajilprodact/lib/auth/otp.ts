@@ -2,7 +2,7 @@
 // تولید، ذخیره و بررسی کد OTP
 
 import { randomInt } from 'node:crypto';
-import { db } from '@/lib/db';
+import { db, queryRows, execute } from '@/lib/db';
 import { sendOtpSms, isValidIranMobile } from '@/lib/auth/sms';
 
 // ==========================================

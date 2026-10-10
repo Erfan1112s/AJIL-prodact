@@ -3,7 +3,7 @@
 
 'use server';
 
-import { db } from '@/lib/db';
+import { db, queryRows, execute } from '@/lib/db';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { requestOtp, verifyOtp } from '@/lib/auth/otp';
 import {
@@ -201,12 +201,12 @@ export async function customerLoginAction(
     return { ok: false, error: genericError };
   }
 
-  const [rows] = await db.query<CustomerRow[]>(
+  const rows = await queryRows<CustomerRow>(
     `SELECT id, password_hash, is_active FROM customers WHERE phone = ? LIMIT 1`,
     [phone]
   );
 
-  const customer = (rows as CustomerRow[])[0];
+  const customer = rows[0];
 
   if (!customer || !customer.password_hash) {
     await verifyPassword(password, 'aa:bb');
@@ -324,14 +324,14 @@ export async function getCurrentCustomerAction(): Promise<
   const id = await getCurrentCustomerId();
   if (!id) return { ok: false, error: 'وارد نشده‌اید' };
 
-  const [rows] = await db.query<CustomerRow[]>(
+  const rows = await queryRows<CustomerRow>(
     `SELECT id, phone, full_name, email, default_address,
             order_count, last_order_at, is_active, created_at
      FROM customers WHERE id = ? AND is_active = 1 LIMIT 1`,
     [id]
   );
 
-  const customer = (rows as CustomerRow[])[0];
+  const customer = rows[0];
   if (!customer) return { ok: false, error: 'حساب یافت نشد' };
 
   return { ok: true, customer };

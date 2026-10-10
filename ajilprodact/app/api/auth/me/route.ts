@@ -2,7 +2,7 @@
 // API برای خواندن اطلاعات مشتری فعلی
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, queryRows, execute } from '@/lib/db';
 import { getCurrentCustomerId } from '@/lib/auth/customer-session';
 import type { CustomerRow } from '@/lib/types';
 
@@ -12,13 +12,13 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: 'وارد نشده‌اید' });
   }
 
-  const [rows] = await db.query<CustomerRow[]>(
+  const rows = await queryRows<CustomerRow>(
     `SELECT id, phone, full_name, email, order_count
      FROM customers WHERE id = ? AND is_active = 1 LIMIT 1`,
     [id]
   );
 
-  const list = rows as CustomerRow[];
+  const list = rows;
   const customer = list[0];
 
   if (!customer) {

@@ -258,30 +258,57 @@ CREATE TABLE customers (
 -- جدول 10: orders
 -- سفارشات مشتریان
 -- ==========================================
+-- ==========================================
+-- جدول 10: orders
+-- سفارشات مشتریان
+-- ==========================================
 CREATE TABLE orders (
-  id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  order_number    VARCHAR(20) NOT NULL,
-  customer_id     INT UNSIGNED NULL,
-  customer_name   VARCHAR(100) NOT NULL,
-  customer_phone  VARCHAR(15) NOT NULL,
-  customer_email  VARCHAR(100) NULL,
-  address         TEXT NULL,
-  total_amount    DECIMAL(12, 0) NOT NULL,
-  status          ENUM(
-                    'PENDING',
-                    'PAID',
-                    'PROCESSING',
-                    'SHIPPED',
-                    'DELIVERED',
-                    'CANCELLED'
-                  ) NOT NULL DEFAULT 'PENDING',
-  payment_method  VARCHAR(20) NULL,
-  payment_ref     VARCHAR(100) NULL,
-  order_type      ENUM('ONLINE', 'IN_STORE') NOT NULL DEFAULT 'ONLINE',
-  branch_id       INT UNSIGNED NULL,
-  note            TEXT NULL,
-  created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_number          VARCHAR(20) NOT NULL,
+  customer_id           INT UNSIGNED NULL,
+  customer_name         VARCHAR(100) NOT NULL,
+  customer_phone        VARCHAR(15) NOT NULL,
+  customer_email        VARCHAR(100) NULL,
+
+  -- اطلاعات آدرس
+  address               TEXT NULL,
+  city                  VARCHAR(100) NULL,
+  province              VARCHAR(100) NULL,
+  postal_code           VARCHAR(10) NULL,
+
+  -- مبالغ
+  subtotal              DECIMAL(12, 0) NOT NULL,
+  shipping_cost         DECIMAL(12, 0) NOT NULL DEFAULT 0,
+  total_amount          DECIMAL(12, 0) NOT NULL,
+
+  -- وضعیت سفارش
+  status                ENUM(
+                          'PENDING',
+                          'PAID',
+                          'PROCESSING',
+                          'SHIPPED',
+                          'DELIVERED',
+                          'CANCELLED'
+                        ) NOT NULL DEFAULT 'PENDING',
+
+  -- روش تحویل
+  delivery_method       ENUM('SHIPPING', 'PICKUP') NOT NULL DEFAULT 'SHIPPING',
+  shipping_provider     ENUM('SNAPP', 'POST', 'NONE') NOT NULL DEFAULT 'NONE',
+
+  -- پرداخت
+  payment_method        VARCHAR(20) NULL,
+  payment_ref           VARCHAR(100) NULL,
+  payment_authority     VARCHAR(100) NULL,
+  payment_verified_at   TIMESTAMP NULL,
+
+  -- انبار
+  branch_id             INT UNSIGNED NULL,
+  tracking_code         VARCHAR(50) NULL,
+  note                  TEXT NULL,
+
+  created_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
   PRIMARY KEY (id),
   UNIQUE KEY uk_orders_number (order_number),
   KEY idx_orders_status (status),

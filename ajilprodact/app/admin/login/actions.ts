@@ -3,7 +3,7 @@
 
 'use server';
 
-import { db } from '@/lib/db';
+import { db, queryRows, execute } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth/password';
 import { setSessionCookie } from '@/lib/auth/session';
 
@@ -35,7 +35,7 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
   }
 
   // گرفتن کاربر از دیتابیس
-  const [rows] = await db.query<AdminUserRow[]>(
+  const rows = await queryRows<AdminUserRow>(
     `SELECT id, username, password_hash, is_active
      FROM admin_users
      WHERE username = ?
@@ -43,7 +43,7 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     [username]
   );
 
-  const list = rows as AdminUserRow[];
+  const list = rows;
   const user = list[0];
 
   // پیام خطای یکسان برای همه حالات

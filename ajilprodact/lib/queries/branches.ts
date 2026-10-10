@@ -1,63 +1,49 @@
 // lib/queries/branches.ts
-// توابع خواندن شعبات و موجودی
+import { queryRows } from '@/lib/db';
+import type { BranchRow, VariantBranchStock } from '@/lib/types';
 
-import { db } from '@/lib/db';
-import type {
-  BranchRow,
-  VariantBranchStock,
-  VariantStockRow,
-  TotalResult,
-} from '@/lib/types';
-
-// ==========================================
-// تابع 1: لیست همه شعبات فعال
-// ==========================================
 export async function getActiveBranches(): Promise<BranchRow[]> {
-  const [rows] = await db.query<BranchRow[]>(
-    `SELECT
-       id, name, slug, address, phone, lat, lng,
-       is_active, created_at, updated_at
+  const rows = await queryRows<BranchRow>(
+    `SELECT id, name, slug, address, phone, lat, lng,
+            is_active, created_at, updated_at
      FROM branches
      WHERE is_active = 1
      ORDER BY name ASC`
   );
-
   return rows;
 }
 
-// ==========================================
-// تابع 2: شعبه با slug
-// ==========================================
 export async function getBranchBySlug(slug: string): Promise<BranchRow | null> {
-  const [rows] = await db.query<BranchRow[]>(
-    `SELECT
-       id, name, slug, address, phone, lat, lng,
-       is_active, created_at, updated_at
+  const rows = await queryRows<BranchRow>(
+    `SELECT id, name, slug, address, phone, lat, lng,
+            is_active, created_at, updated_at
      FROM branches
      WHERE slug = ? AND is_active = 1
      LIMIT 1`,
     [slug]
   );
-
   return rows[0] ?? null;
 }
 
-// ==========================================
-// تابع 3: موجودی یک واریانت در همه شعبات
-// برای نمایش "کدام شعبه دارد" در صفحه محصول
-// ==========================================
 export async function getVariantAvailability(
   variantId: number
 ): Promise<VariantBranchStock[]> {
-  const [rows] = await db.query<VariantStockRow[]>(
-    `SELECT
-       b.id AS branch_id,
-       b.name AS branch_name,
-       b.slug AS branch_slug,
-       b.address AS branch_address,
-       b.phone AS branch_phone,
-       COALESCE(bi.stock, 0) AS stock,
-       COALESCE(bi.reserved, 0) AS reserved
+  const rows = await queryRows<{
+    branch_id: number;
+    branch_name: string;
+    branch_slug: string;
+    branch_address: string | null;
+    branch_phone: string | null;
+    stock: number;
+    reserved: number;
+  }>(
+    `SELECT b.id AS branch_id,
+            b.name AS branch_name,
+            b.slug AS branch_slug,
+            b.address AS branch_address,
+            b.phone AS branch_phone,
+            COALESCE(bi.stock, 0) AS stock,
+            COALESCE(bi.reserved, 0) AS reserved
      FROM branches b
      LEFT JOIN branch_inventory bi
        ON bi.branch_id = b.id AND bi.variant_id = ?
@@ -78,17 +64,12 @@ export async function getVariantAvailability(
   }));
 }
 
-// ==========================================
-// تابع 4: جمع موجودی کل یک واریانت در همه شعبات
-// برای نمایش "موجود / ناموجود" در کارت محصول
-// ==========================================
 export async function getTotalStockForVariant(variantId: number): Promise<number> {
-  const [rows] = await db.query<TotalResult[]>(
+  const rows = await queryRows<{ total: number }>(
     `SELECT COALESCE(SUM(stock - reserved), 0) AS total
      FROM branch_inventory
      WHERE variant_id = ?`,
     [variantId]
   );
-
   return rows[0]?.total ?? 0;
 }

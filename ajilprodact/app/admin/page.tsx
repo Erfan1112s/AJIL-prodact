@@ -3,7 +3,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { db } from '@/lib/db';
+import { db, queryRows, execute } from '@/lib/db';
 import { logoutAction } from '@/app/admin/actions';
 
 export const metadata: Metadata = {

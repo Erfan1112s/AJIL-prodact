@@ -253,3 +253,45 @@ export interface ProductWithCategoryRow extends ProductRow {
   category_name: string;
   category_slug: string;
 }
+
+// تایپ‌های وضعیت سفارش
+export type OrderStatus =
+  | 'PENDING'
+  | 'PAID'
+  | 'PROCESSING'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED';
+
+export type DeliveryMethod = 'SHIPPING' | 'PICKUP';
+export type ShippingProvider = 'SNAPP' | 'POST' | 'NONE';
+export type OrderType = 'ONLINE' | 'IN_STORE';
+
+// ردیف جدول orders (به‌روزرسانی شده)
+export interface OrderRow {
+  id: number;
+  order_number: string;
+  customer_id: number | null;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string | null;
+  address: string | null;
+  city: string | null;
+  province: string | null;
+  postal_code: string | null;
+  subtotal: number;
+  shipping_cost: number;
+  total_amount: number;
+  status: OrderStatus;
+  delivery_method: DeliveryMethod;
+  shipping_provider: ShippingProvider;
+  payment_method: string | null;
+  payment_ref: string | null;
+  payment_authority: string | null;
+  payment_verified_at: Date | null;
+  branch_id: number | null;
+  tracking_code: string | null;
+  note: string | null;
+  created_at: Date;
+  updated_at: Date;
+}

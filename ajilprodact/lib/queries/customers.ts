@@ -1,51 +1,33 @@
 // lib/queries/customers.ts
-// توابع خواندن مشتریان
+import { queryRows } from '@/lib/db';
+import type { CustomerRow } from '@/lib/types';
 
-import { db } from '@/lib/db';
-import type { CustomerRow, CountResult } from '@/lib/types';
-
-// ==========================================
-// تابع 1: مشتری با شماره موبایل
-// ==========================================
-export async function getCustomerByPhone(
-  phone: string
-): Promise<CustomerRow | null> {
-  const [rows] = await db.query<CustomerRow[]>(
-    `SELECT
-       id, phone, full_name, email, default_address, admin_note,
-       order_count, last_order_at, is_active,
-       created_at, updated_at
+export async function getCustomerByPhone(phone: string): Promise<CustomerRow | null> {
+  const rows = await queryRows<CustomerRow>(
+    `SELECT id, phone, national_code, full_name, email, default_address,
+            admin_note, order_count, last_order_at, is_active,
+            created_at, updated_at
      FROM customers
      WHERE phone = ?
      LIMIT 1`,
     [phone]
   );
-
   return rows[0] ?? null;
 }
 
-// ==========================================
-// تابع 2: مشتری با id
-// ==========================================
 export async function getCustomerById(id: number): Promise<CustomerRow | null> {
-  const [rows] = await db.query<CustomerRow[]>(
-    `SELECT
-       id, phone, full_name, email, default_address, admin_note,
-       order_count, last_order_at, is_active,
-       created_at, updated_at
+  const rows = await queryRows<CustomerRow>(
+    `SELECT id, phone, national_code, full_name, email, default_address,
+            admin_note, order_count, last_order_at, is_active,
+            created_at, updated_at
      FROM customers
      WHERE id = ?
      LIMIT 1`,
     [id]
   );
-
   return rows[0] ?? null;
 }
 
-// ==========================================
-// تابع 3: لیست مشتریان با صفحه‌بندی
-// برای پنل ادمین
-// ==========================================
 export interface GetCustomersOptions {
   limit?: number;
   offset?: number;
@@ -56,7 +38,6 @@ export async function getCustomers(
   options: GetCustomersOptions = {}
 ): Promise<CustomerRow[]> {
   const { limit = 20, offset = 0, search } = options;
-
   const conditions: string[] = ['is_active = 1'];
   const params: unknown[] = [];
 
@@ -68,28 +49,21 @@ export async function getCustomers(
 
   const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 100);
   const safeOffset = Math.max(0, Math.floor(offset));
-
   const whereClause = conditions.join(' AND ');
 
-  const [rows] = await db.query<CustomerRow[]>(
-    `SELECT
-       id, phone, full_name, email, default_address, admin_note,
-       order_count, last_order_at, is_active,
-       created_at, updated_at
+  const rows = await queryRows<CustomerRow>(
+    `SELECT id, phone, national_code, full_name, email, default_address,
+            admin_note, order_count, last_order_at, is_active,
+            created_at, updated_at
      FROM customers
      WHERE ${whereClause}
      ORDER BY last_order_at DESC, created_at DESC
      LIMIT ${safeLimit} OFFSET ${safeOffset}`,
     params
   );
-
   return rows;
 }
 
-// ==========================================
-// تابع 4: تعداد کل مشتریان
-// برای صفحه‌بندی
-// ==========================================
 export async function getCustomersCount(search?: string): Promise<number> {
   const conditions: string[] = ['is_active = 1'];
   const params: unknown[] = [];
@@ -101,11 +75,9 @@ export async function getCustomersCount(search?: string): Promise<number> {
   }
 
   const whereClause = conditions.join(' AND ');
-
-  const [rows] = await db.query<CountResult[]>(
+  const rows = await queryRows<{ count: number }>(
     `SELECT COUNT(*) AS count FROM customers WHERE ${whereClause}`,
     params
   );
-
   return rows[0]?.count ?? 0;
 }

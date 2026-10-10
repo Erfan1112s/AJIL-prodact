@@ -1,32 +1,31 @@
 -- db/seed.sql
--- داده اولیه برای تست فاز یک
--- این فایل را با دستور mysql -u root -p ajil_catalog < db/seed.sql اجرا کنید
+-- داده اولیه پروژه کاتالوگ آجیل و خشکبار
+-- این نسخه با DELETE نوشته شده تا روی هاست cPanel بدون مشکل کار کند
 
 SET NAMES utf8mb4;
-
--- ==========================================
--- پاک‌سازی به ترتیب معکوس وابستگی
--- ==========================================
 SET FOREIGN_KEY_CHECKS = 0;
 
-TRUNCATE TABLE order_items;
-TRUNCATE TABLE orders;
-TRUNCATE TABLE branch_inventory;
-TRUNCATE TABLE customers;
-TRUNCATE TABLE batches;
-TRUNCATE TABLE product_images;
-TRUNCATE TABLE product_variants;
-TRUNCATE TABLE products;
-TRUNCATE TABLE categories;
-TRUNCATE TABLE branches;
-TRUNCATE TABLE admin_users;
-
-SET FOREIGN_KEY_CHECKS = 1;
+-- ==========================================
+-- پاک‌سازی جدول‌ها
+-- ترتیب: فرزندان قبل از والدین
+-- ==========================================
+DELETE FROM order_items;
+DELETE FROM orders;
+DELETE FROM branch_inventory;
+DELETE FROM customers;
+DELETE FROM batches;
+DELETE FROM product_images;
+DELETE FROM product_variants;
+DELETE FROM products;
+DELETE FROM categories;
+DELETE FROM branches;
+DELETE FROM admin_users;
 
 -- بازنشانی AUTO_INCREMENT
 ALTER TABLE order_items AUTO_INCREMENT = 1;
 ALTER TABLE orders AUTO_INCREMENT = 1;
 ALTER TABLE branch_inventory AUTO_INCREMENT = 1;
+ALTER TABLE customers AUTO_INCREMENT = 1;
 ALTER TABLE batches AUTO_INCREMENT = 1;
 ALTER TABLE product_images AUTO_INCREMENT = 1;
 ALTER TABLE product_variants AUTO_INCREMENT = 1;
@@ -35,10 +34,11 @@ ALTER TABLE categories AUTO_INCREMENT = 1;
 ALTER TABLE branches AUTO_INCREMENT = 1;
 ALTER TABLE admin_users AUTO_INCREMENT = 1;
 
+SET FOREIGN_KEY_CHECKS = 1;
+
 
 -- ==========================================
 -- دسته‌بندی‌ها
--- ساختار درختی: 3 دسته اصلی و چند زیر‌دسته
 -- ==========================================
 INSERT INTO categories (id, name, slug, description, parent_id, sort_order) VALUES
   (1, 'آجیل', 'ajil', 'انواع آجیل شور و خام', NULL, 1),
@@ -97,7 +97,6 @@ VALUES
 
 -- ==========================================
 -- واریانت‌ها (وزن و قیمت)
--- هر محصول دو یا سه وزن دارد
 -- ==========================================
 INSERT INTO product_variants (product_id, weight_gram, price, compare_price, sku) VALUES
   -- پسته اکبری
@@ -124,8 +123,7 @@ INSERT INTO product_variants (product_id, weight_gram, price, compare_price, sku
 
 
 -- ==========================================
--- تصاویر
--- URLهای نمونه (در فاز 2 با ArvanCloud جایگزین می‌شوند)
+-- تصاویر محصولات
 -- ==========================================
 INSERT INTO product_images (product_id, url, alt, sort_order, is_primary) VALUES
   (1, '/images/products/پسته اکبری.jpg', 'پسته اکبری ممتاز', 1, 1),
@@ -154,12 +152,9 @@ VALUES
 
 
 -- ==========================================
--- موجودی شعبات
--- هر واریانت در هر شعبه یک ردیف دارد
+-- موجودی شعبه مرکزی
 -- ==========================================
 INSERT INTO branch_inventory (branch_id, variant_id, stock) VALUES
-  -- شعبه مرکزی (branch 1)
-  -- variant_id 1 تا 12 به ترتیب همان محصولات و وزن‌ها هستند
   (1, 1, 45),
   (1, 2, 30),
   (1, 3, 15),
@@ -175,9 +170,50 @@ INSERT INTO branch_inventory (branch_id, variant_id, stock) VALUES
 
 
 -- ==========================================
--- کاربر ادمین پیش‌فرض
--- نام کاربری: admin
--- رمز: بعدا با bcrypt هش می‌شود، الان placeholder
+-- مشتریان نمونه
+-- ==========================================
+INSERT INTO customers
+  (id, phone, full_name, email, default_address, order_count, last_order_at)
+VALUES
+  (1, '09121234567', 'علی رضایی',  'ali@example.com',    'تهران، سعادت‌آباد، کوچه 5',  3, '2025-09-20 10:30:00'),
+  (2, '09351112233', 'مریم احمدی', 'maryam@example.com', 'تهران، ونک، خیابان گاندی',   1, '2025-09-18 15:45:00'),
+  (3, '09197778899', 'حسن کریمی',  NULL,                 'کرج، عظیمیه، بلوار اصلی',    5, '2025-09-22 09:00:00'),
+  (4, '09361234567', 'زهرا موسوی', NULL,                 NULL,                          0, NULL);
+
+
+-- ==========================================
+-- سفارشات نمونه
+-- ==========================================
+INSERT INTO orders
+  (order_number, customer_id, customer_name, customer_phone, total_amount,
+   status, order_type, branch_id, created_at)
+VALUES
+  ('ORD-1404001', 1, 'علی رضایی',  '09121234567', 880000,  'DELIVERED', 'ONLINE',   NULL, '2025-09-20 10:30:00'),
+  ('ORD-1404002', 2, 'مریم احمدی', '09351112233', 450000,  'PAID',      'ONLINE',   NULL, '2025-09-18 15:45:00'),
+  ('ORD-1404003', 3, 'حسن کریمی',  '09197778899', 1720000, 'SHIPPED',   'IN_STORE', 1,    '2025-09-22 09:00:00');
+
+
+-- ==========================================
+-- اقلام سفارش
+-- ==========================================
+INSERT INTO order_items
+  (order_id, product_id, variant_id, product_name, weight_gram, price, quantity)
+VALUES
+  (1, 1, 2, 'پسته اکبری ممتاز',   500,  880000,  1),
+  (2, 1, 1, 'پسته اکبری ممتاز',   250,  450000,  1),
+  (3, 1, 3, 'پسته اکبری ممتاز',   1000, 1720000, 1);
+
+
+-- ==========================================
+-- کاربر ادمین
+-- توجه: این هش با هیچ رمزی مطابقت ندارد
+-- بعد از ایمپورت، این کوئری را اجرا کن:
+--   UPDATE admin_users
+--   SET password_hash = 'هش-واقعی-خودت'
+--   WHERE username = 'admin';
+--
+-- برای ساخت هش، روی سیستم لوکال اجرا کن:
+--   node scripts/generate-admin-hash.mjs 'رمز-قوی-خودت'
 -- ==========================================
 INSERT INTO admin_users (username, password_hash, full_name, role) VALUES
   ('admin', 'fbd7798974ae03f3b3af95d9f9261344:9cf95aeca92f030fe8d222436441f728d1de47c1f0b92e10b3dfde53b72bc3f9b82abb44476be4cd64a2c78eac7600bdca5149cf08e12f6b855ad0a4b8b86753', 'مدیر سیستم', 'SUPER_ADMIN');
