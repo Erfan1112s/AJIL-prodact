@@ -111,6 +111,7 @@ CREATE TABLE product_variants (
   price          DECIMAL(12, 0) NOT NULL,
   compare_price  DECIMAL(12, 0) NULL,
   sku            VARCHAR(50) NULL,
+  image_url      VARCHAR(500) NULL,
   is_active      TINYINT(1) NOT NULL DEFAULT 1,
   created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -152,19 +153,27 @@ CREATE TABLE product_images (
 -- شناسنامه بچ تولید
 -- ==========================================
 CREATE TABLE batches (
-  id               INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  batch_code       VARCHAR(30) NOT NULL,
-  product_id       INT UNSIGNED NOT NULL,
-  supplier_name    VARCHAR(150) NULL,
-  harvest_date     DATE NULL,
-  roast_date       DATE NULL,
-  pack_date        DATE NULL,
-  expiry_date      DATE NULL,
-  freshness_score  TINYINT UNSIGNED NOT NULL DEFAULT 100,
-  qc_note          TEXT NULL,
-  is_active        TINYINT(1) NOT NULL DEFAULT 1,
-  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  batch_code             VARCHAR(30) NOT NULL,
+  product_id             INT UNSIGNED NOT NULL,
+  supplier_name          VARCHAR(150) NULL,
+  harvest_date           DATE NULL,
+  roast_date             DATE NULL,
+  pack_date              DATE NULL,
+  expiry_date            DATE NULL,
+
+  -- تازگی
+  freshness_mode         ENUM('MANUAL', 'AUTO') NOT NULL DEFAULT 'MANUAL',
+  freshness_score        TINYINT UNSIGNED NOT NULL DEFAULT 100,
+  freshness_base_score   TINYINT UNSIGNED NOT NULL DEFAULT 100,
+  freshness_base_date    DATE NULL,
+  freshness_annual_decay TINYINT UNSIGNED NOT NULL DEFAULT 50,
+
+  qc_note                TEXT NULL,
+  is_active              TINYINT(1) NOT NULL DEFAULT 1,
+  created_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
   PRIMARY KEY (id),
   UNIQUE KEY uk_batches_code (batch_code),
   KEY idx_batches_product (product_id),

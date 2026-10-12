@@ -1,4 +1,7 @@
 // lib/queries/products.ts
+// توابع خواندن محصولات با واریانت‌ها و تصاویر
+// طراحی شده برای جلوگیری از N+1 query
+
 import { queryRows } from '@/lib/db';
 import type {
   ProductRow,
@@ -10,6 +13,10 @@ import type {
   ProductDetail,
 } from '@/lib/types';
 
+// ==========================================
+// تابع داخلی: چسباندن واریانت‌ها و تصاویر به محصولات
+// این تابع از N+1 جلوگیری می‌کند
+// ==========================================
 async function attachVariantsAndImages(
   products: ProductRow[]
 ): Promise<ProductListItem[]> {
@@ -19,14 +26,18 @@ async function attachVariantsAndImages(
   const placeholders = productIds.map(() => '?').join(',');
 
   const [variants, images, categories] = await Promise.all([
+    // کوئری 1: همه واریانت‌های این محصولات
+    // توجه: ستون image_url هم خوانده می‌شود
     queryRows<ProductVariantRow>(
       `SELECT id, product_id, weight_gram, price, compare_price,
-              sku, is_active, created_at, updated_at
+              sku, image_url, is_active, created_at, updated_at
        FROM product_variants
        WHERE product_id IN (${placeholders}) AND is_active = 1
        ORDER BY weight_gram ASC`,
       productIds
     ),
+
+    // کوئری 2: تصاویر محصولات
     queryRows<ProductImageRow>(
       `SELECT id, product_id, url, alt, sort_order, is_primary, created_at
        FROM product_images
@@ -34,6 +45,8 @@ async function attachVariantsAndImages(
        ORDER BY is_primary DESC, sort_order ASC`,
       productIds
     ),
+
+    // کوئری 3: اطلاعات دسته
     queryRows<CategorySummary>(
       `SELECT DISTINCT c.id, c.name, c.slug
        FROM categories c
@@ -43,6 +56,7 @@ async function attachVariantsAndImages(
     ),
   ]);
 
+  // گروه‌بندی واریانت‌ها بر اساس product_id
   const variantsByProduct = new Map<number, ProductVariantRow[]>();
   for (const v of variants) {
     const list = variantsByProduct.get(v.product_id) ?? [];
@@ -50,6 +64,7 @@ async function attachVariantsAndImages(
     variantsByProduct.set(v.product_id, list);
   }
 
+  // گروه‌بندی تصاویر - فقط اولین (اصلی) هر محصول
   const primaryImageByProduct = new Map<number, ProductImageRow>();
   for (const img of images) {
     if (!primaryImageByProduct.has(img.product_id)) {
@@ -57,6 +72,7 @@ async function attachVariantsAndImages(
     }
   }
 
+  // نگاشت دسته‌ها
   const categoryById = new Map<number, CategorySummary>();
   for (const c of categories) {
     categoryById.set(c.id, c);
@@ -69,6 +85,7 @@ async function attachVariantsAndImages(
       name: 'بدون دسته',
       slug: '',
     };
+
     const minPrice =
       productVariants.length > 0
         ? Math.min(...productVariants.map((v) => v.price))
@@ -88,6 +105,10 @@ async function attachVariantsAndImages(
   });
 }
 
+// ==========================================
+// تابع 1: لیست محصولات با صفحه‌بندی
+// ==========================================
+
 export interface GetProductsOptions {
   limit?: number;
   offset?: number;
@@ -98,7 +119,13 @@ export interface GetProductsOptions {
 export async function getProducts(
   options: GetProductsOptions = {}
 ): Promise<ProductListItem[]> {
-  const { limit = 20, offset = 0, categoryId, featuredOnly = false } = options;
+  const {
+    limit = 20,
+    offset = 0,
+    categoryId,
+    featuredOnly = false,
+  } = options;
+
   const conditions: string[] = ['is_active = 1'];
   const params: unknown[] = [];
 
@@ -106,6 +133,7 @@ export async function getProducts(
     conditions.push('category_id = ?');
     params.push(categoryId);
   }
+
   if (featuredOnly) {
     conditions.push('is_featured = 1');
   }
@@ -129,9 +157,19 @@ export async function getProducts(
   return attachVariantsAndImages(products);
 }
 
-export async function getFeaturedProducts(limit = 4): Promise<ProductListItem[]> {
+// ==========================================
+// تابع 2: محصولات منتخب
+// ==========================================
+
+export async function getFeaturedProducts(
+  limit = 4
+): Promise<ProductListItem[]> {
   return getProducts({ limit, featuredOnly: true });
 }
+
+// ==========================================
+// تابع 3: محصولات یک دسته
+// ==========================================
 
 export async function getProductsByCategory(
   categoryId: number,
@@ -141,9 +179,14 @@ export async function getProductsByCategory(
   return getProducts({ limit, offset, categoryId });
 }
 
+// ==========================================
+// تابع 4: محصول با slug (برای صفحه تک محصول)
+// ==========================================
+
 export async function getProductBySlug(
   slug: string
 ): Promise<ProductDetail | null> {
+  // کوئری اول: اطلاعات پایه + دسته
   const products = await queryRows<
     ProductRow & { category_name: string; category_slug: string }
   >(
@@ -163,15 +206,18 @@ export async function getProductBySlug(
   const product = products[0];
   if (!product) return null;
 
+  // کوئری‌های موازی: واریانت‌ها، تصاویر، آخرین بچ
   const [variants, images, batches] = await Promise.all([
+    // توجه: ستون image_url هم اینجا خوانده می‌شود
     queryRows<ProductVariantRow>(
       `SELECT id, product_id, weight_gram, price, compare_price,
-              sku, is_active, created_at, updated_at
+              sku, image_url, is_active, created_at, updated_at
        FROM product_variants
        WHERE product_id = ? AND is_active = 1
        ORDER BY weight_gram ASC`,
       [product.id]
     ),
+
     queryRows<ProductImageRow>(
       `SELECT id, product_id, url, alt, sort_order, is_primary, created_at
        FROM product_images
@@ -179,14 +225,16 @@ export async function getProductBySlug(
        ORDER BY is_primary DESC, sort_order ASC`,
       [product.id]
     ),
+
     queryRows<BatchRow>(
       `SELECT id, batch_code, product_id, supplier_name,
               harvest_date, roast_date, pack_date, expiry_date,
-              freshness_score, qc_note, is_active,
-              created_at, updated_at
+              freshness_mode, freshness_score, freshness_base_score,
+              freshness_base_date, freshness_annual_decay,
+              qc_note, is_active, created_at, updated_at
        FROM batches
        WHERE product_id = ? AND is_active = 1
-       ORDER BY pack_date DESC
+       ORDER BY pack_date DESC, id DESC
        LIMIT 1`,
       [product.id]
     ),
@@ -210,6 +258,10 @@ export async function getProductBySlug(
     latest_batch: batches[0] ?? null,
   };
 }
+
+// ==========================================
+// تابع 5: افزایش شمارنده بازدید
+// ==========================================
 
 export async function incrementProductView(productId: number): Promise<void> {
   const { execute } = await import('@/lib/db');

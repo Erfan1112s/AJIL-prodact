@@ -1,9 +1,10 @@
 // components/ProductVariantSelector.tsx
-// انتخاب وزن و افزودن به سبد خرید با انیمیشن مدرن
+// انتخاب وزن و افزودن به سبد - با callback برای تغییر تصویر والد
 
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { CartIcon, CheckIcon, NfcIcon } from '@/components/icons';
 import { useCart } from '@/lib/cart/CartContext';
 import type { ProductVariantRow } from '@/lib/types';
@@ -14,6 +15,9 @@ interface Props {
   productName: string;
   productSlug: string;
   productImage: string | null;
+  // state واریانت انتخاب‌شده از والد
+  selectedVariantId: number | null;
+  onVariantChange: (variantId: number) => void;
 }
 
 function formatPrice(price: number): string {
@@ -26,20 +30,17 @@ export default function ProductVariantSelector({
   productName,
   productSlug,
   productImage,
+  selectedVariantId,
+  onVariantChange,
 }: Props) {
   const { addItem } = useCart();
-  const [selectedId, setSelectedId] = useState<number | null>(
-    variants[0]?.id ?? null
-  );
-  // حالت دکمه: idle | adding | added
-  // برای کنترل انیمیشن سه‌مرحله‌ای
   const [buttonState, setButtonState] = useState<'idle' | 'adding' | 'added'>(
     'idle'
   );
 
-  const selected = variants.find((v) => v.id === selectedId) ?? null;
+  const selected =
+    variants.find((v) => v.id === selectedVariantId) ?? variants[0] ?? null;
 
-  // بازگشت خودکار به حالت idle بعد از نمایش تایید
   useEffect(() => {
     if (buttonState !== 'added') return;
     const timer = setTimeout(() => setButtonState('idle'), 1400);
@@ -55,16 +56,11 @@ export default function ProductVariantSelector({
   }
 
   function handleAddToCart() {
-    // اگر واریانتی انتخاب نشده، خارج شو
     if (!selected) return;
-
-    // اگر در حال پردازش است، از کلیک مجدد جلوگیری کن
     if (buttonState !== 'idle') return;
 
-    // تغییر حالت به adding برای انیمیشن فشردن
     setButtonState('adding');
 
-    // افزودن به سبد
     addItem({
       variantId: selected.id,
       productId,
@@ -72,27 +68,26 @@ export default function ProductVariantSelector({
       productSlug,
       weightGram: selected.weight_gram,
       price: selected.price,
-      imageUrl: productImage,
+      // تصویر: اگر واریانت دارد، از آن. وگرنه تصویر محصول
+      imageUrl: selected.image_url ?? productImage,
     });
 
-    // تغییر حالت به added بعد از 200 میلی‌ثانیه
-    // این تأخیر برای نمایش انیمیشن فشردن است
     setTimeout(() => setButtonState('added'), 200);
   }
 
   const discountPercent =
     selected?.compare_price && selected.compare_price > selected.price
       ? Math.round(
-        ((selected.compare_price - selected.price) /
-          selected.compare_price) *
-        100
-      )
+          ((selected.compare_price - selected.price) /
+            selected.compare_price) *
+            100
+        )
       : 0;
 
   return (
-    <div className="space-y-6">
+    <div id="variant-selector" className="space-y-6">
       {/* ==========================================
-          انتخاب وزن
+          انتخاب وزن - با تصویر کوچک
           ========================================== */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -104,42 +99,77 @@ export default function ProductVariantSelector({
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {variants.map((v) => {
-            const isSelected = v.id === selectedId;
+            const isSelected = v.id === selectedVariantId;
             const hasDiscount =
               v.compare_price && v.compare_price > v.price;
+            const hasImage = Boolean(v.image_url);
 
             return (
               <button
                 key={v.id}
                 type="button"
-                onClick={() => setSelectedId(v.id)}
-                className={`relative px-3 py-3 rounded-xl border-2 text-center transition-all duration-200 ${isSelected
+                onClick={() => onVariantChange(v.id)}
+                className={`group relative overflow-hidden rounded-2xl border-2 text-right transition-all duration-200 ${
+                  isSelected
                     ? 'border-gold-500 bg-gold-50 shadow-md shadow-gold-500/20 scale-[1.02]'
                     : 'border-coffee-200 bg-white hover:border-gold-300 hover:scale-[1.01]'
-                  }`}
+                }`}
               >
-                <div
-                  className={`font-bold text-sm fa-num ${isSelected ? 'text-gold-700' : 'text-coffee-800'
+                {/* تصویر واریانت (اگر هست) */}
+                {hasImage && (
+                  <div className="aspect-[4/3] relative overflow-hidden">
+                    <Image
+                      src={v.image_url!}
+                      alt={`${productName} ${v.weight_gram} گرم`}
+                      fill
+                      sizes="200px"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    {/* گرادیانت پایین برای خوانایی */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  </div>
+                )}
+
+                {/* اطلاعات */}
+                <div className={`p-3 ${hasImage ? 'pt-2' : ''}`}>
+                  <div
+                    className={`font-bold text-sm fa-num mb-1 ${
+                      hasImage
+                        ? 'text-coffee-900'
+                        : isSelected
+                          ? 'text-gold-700'
+                          : 'text-coffee-800'
                     }`}
-                >
-                  {v.weight_gram.toLocaleString('fa-IR')}
-                  <span className="text-xs font-normal mr-1">گرم</span>
-                </div>
-                <div
-                  className={`text-[10px] mt-1 fa-num ${isSelected ? 'text-gold-600' : 'text-coffee-500'
+                  >
+                    {v.weight_gram.toLocaleString('fa-IR')}
+                    <span className="text-xs font-normal mr-1">گرم</span>
+                  </div>
+                  <div
+                    className={`text-[11px] fa-num ${
+                      isSelected ? 'text-gold-700' : 'text-coffee-500'
                     }`}
-                >
-                  {formatPrice(v.price)}
+                  >
+                    {formatPrice(v.price)}
+                    <span className="text-[9px] mr-0.5">تومان</span>
+                  </div>
                 </div>
 
+                {/* نشان تخفیف */}
                 {hasDiscount && (
-                  <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-coffee-900 text-[9px] font-bold shadow-sm fa-num">
+                  <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-coffee-900 text-[9px] font-bold shadow-sm fa-num">
                     {Math.round(
                       ((v.compare_price! - v.price) / v.compare_price!) * 100
                     ).toLocaleString('fa-IR')}
                     ٪
+                  </span>
+                )}
+
+                {/* نشان انتخاب */}
+                {isSelected && (
+                  <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-gold-500 flex items-center justify-center shadow-md">
+                    <CheckIcon className="w-3 h-3 text-coffee-900" />
                   </span>
                 )}
               </button>
@@ -179,51 +209,51 @@ export default function ProductVariantSelector({
           </div>
 
           <div className="space-y-2">
-            {/* دکمه افزودن به سبد با انیمیشن یک‌باره */}
             <div className="relative">
               <button
                 type="button"
                 onClick={handleAddToCart}
                 disabled={buttonState !== 'idle'}
-                className={`group/btn relative w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl transition-all duration-300 overflow-hidden disabled:cursor-not-allowed ${buttonState === 'idle'
+                className={`group/btn relative w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl transition-all duration-300 overflow-hidden disabled:cursor-not-allowed ${
+                  buttonState === 'idle'
                     ? 'btn-gold active:scale-[0.98]'
                     : buttonState === 'adding'
                       ? 'bg-gold-400 text-coffee-900 scale-[0.97]'
                       : 'bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-600/30'
-                  }`}
+                }`}
               >
-                {/* آیکون متحرک: چرخش از سبد به تیک */}
                 <span className="relative w-5 h-5 flex items-center justify-center">
                   <CartIcon
-                    className={`absolute w-5 h-5 transition-all duration-300 ${buttonState === 'idle'
+                    className={`absolute w-5 h-5 transition-all duration-300 ${
+                      buttonState === 'idle'
                         ? 'opacity-100 scale-100 rotate-0'
                         : 'opacity-0 scale-0 rotate-90'
-                      }`}
+                    }`}
                   />
                   <CheckIcon
-                    className={`absolute w-5 h-5 ${buttonState === 'added' ? 'animate-pop-once' : 'opacity-0 scale-0'
-                      }`}
+                    className={`absolute w-5 h-5 transition-all duration-500 ${
+                      buttonState === 'added'
+                        ? 'opacity-100 scale-100 rotate-0'
+                        : 'opacity-0 scale-0 -rotate-90'
+                    }`}
                   />
                 </span>
 
-                {/* متن */}
-                <span className="relative transition-opacity duration-200">
+                <span className="relative">
                   {buttonState === 'idle' && 'افزودن به سبد خرید'}
                   {buttonState === 'adding' && 'در حال افزودن...'}
                   {buttonState === 'added' && 'به سبد اضافه شد'}
                 </span>
               </button>
 
-              {/* حلقه سبز که یک بار بیرون دکمه می‌زند */}
               {buttonState === 'added' && (
                 <span
-                  className="absolute inset-0 rounded-xl border-2 border-brand-500 animate-ring-once pointer-events-none"
+                  className="absolute inset-0 rounded-xl border-2 border-brand-500 animate-ping pointer-events-none"
                   aria-hidden="true"
                 />
               )}
             </div>
 
-            {/* دکمه رزرو از شعبه */}
             <button
               type="button"
               className="w-full inline-flex items-center justify-center gap-2 bg-white border border-coffee-200 hover:border-gold-500 hover:text-gold-700 text-coffee-800 py-3 rounded-xl text-sm font-medium transition-colors"

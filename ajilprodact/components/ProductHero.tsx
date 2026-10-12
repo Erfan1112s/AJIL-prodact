@@ -1,5 +1,5 @@
 // components/ProductHero.tsx
-// Hero صفحه محصول با پالت قهوه‌ای و طلایی
+// Hero صفحه محصول - تصویر از والد دریافت می‌شود
 
 'use client';
 
@@ -17,17 +17,16 @@ import type { ProductDetail } from '@/lib/types';
 
 interface Props {
   product: ProductDetail;
+  // تصویر فعال - از والد پاس داده می‌شود
+  imageUrl: string | null;
 }
 
 function formatPrice(price: number): string {
   return price.toLocaleString('fa-IR');
 }
 
-export default function ProductHero({ product }: Props) {
+export default function ProductHero({ product, imageUrl }: Props) {
   const [liked, setLiked] = useState(false);
-
-  const primaryImage =
-    product.images.find((img) => img.is_primary === 1) ?? product.images[0];
 
   const lowestPrice =
     product.variants.length > 0
@@ -43,13 +42,15 @@ export default function ProductHero({ product }: Props) {
 
   return (
     <div className="relative rounded-3xl overflow-hidden aspect-[4/5] sm:aspect-[16/10] md:aspect-[16/9] shadow-2xl shadow-coffee-900/30">
-      {primaryImage ? (
+      {imageUrl ? (
+        // key باعث رندر مجدد هنگام تغییر تصویر می‌شود
         <Image
-          src={primaryImage.url}
-          alt={primaryImage.alt ?? product.name}
+          key={imageUrl}
+          src={imageUrl}
+          alt={product.name}
           fill
           sizes="(max-width: 768px) 100vw, 90vw"
-          className="object-cover"
+          className="object-cover animate-fade-in"
           priority
         />
       ) : (
@@ -61,7 +62,7 @@ export default function ProductHero({ product }: Props) {
         aria-hidden="true"
       />
 
-      {/* ردیف بالا: قیمت و قلب */}
+      {/* ردیف بالا */}
       <div className="absolute top-4 right-4 left-4 flex items-start justify-between gap-3">
         <div className="inline-flex items-baseline gap-1.5 bg-white/95 backdrop-blur-md rounded-full px-4 py-2 shadow-lg border border-gold-200/50">
           <span className="text-coffee-500 text-[10px] font-medium">از</span>
