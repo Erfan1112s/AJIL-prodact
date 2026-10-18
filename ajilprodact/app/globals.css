@@ -8,7 +8,7 @@
   /* ==========================================
      قهوه‌ای گرم‌تر (با تمایل نارنجی-طلایی)
      ========================================== */
-  --color-coffee-50:  #FBF6F0;
+  --color-coffee-50: #FBF6F0;
   --color-coffee-100: #F5E8D9;
   --color-coffee-200: #EBD3B8;
   --color-coffee-300: #D9B98E;
@@ -22,7 +22,7 @@
   /* ==========================================
      طلایی روشن‌تر و درخشان‌تر
      ========================================== */
-  --color-gold-50:  #FFFBEB;
+  --color-gold-50: #FFFBEB;
   --color-gold-100: #FEF3C7;
   --color-gold-200: #FDE68A;
   --color-gold-300: #FCD34D;
@@ -36,7 +36,7 @@
   /* ==========================================
      کرم گرم
      ========================================== */
-  --color-cream-50:  #FFFDF7;
+  --color-cream-50: #FFFDF7;
   --color-cream-100: #FDF8EE;
   --color-cream-200: #F8EFDD;
   --color-cream-300: #EFE0C7;
@@ -54,23 +54,47 @@
    ========================================== */
 
 @keyframes shimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slide-down {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* حلقه‌ای که یک بار باز می‌شود و محو می‌شود */
@@ -79,6 +103,7 @@
     transform: scale(1);
     opacity: 0.7;
   }
+
   100% {
     transform: scale(1.15);
     opacity: 0;
@@ -91,15 +116,18 @@
     transform: scale(0.6);
     opacity: 0;
   }
+
   60% {
     transform: scale(1.1);
     opacity: 1;
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
   }
 }
+
 /* ==========================================
    تنظیمات پایه
    ========================================== */
@@ -155,11 +183,9 @@ body {
 
 /* پس‌زمینه نقطه‌ای طلایی */
 .bg-dotted-gold {
-  background-image: radial-gradient(
-    circle,
-    rgba(201, 152, 42, 0.12) 1px,
-    transparent 1px
-  );
+  background-image: radial-gradient(circle,
+      rgba(201, 152, 42, 0.12) 1px,
+      transparent 1px);
   background-size: 28px 28px;
 }
 
@@ -199,12 +225,10 @@ body {
   right: 0;
   width: 50%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.35),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.35),
+      transparent);
   animation: shimmer 2.5s infinite;
   pointer-events: none;
 }

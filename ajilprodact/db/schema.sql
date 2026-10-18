@@ -7,11 +7,10 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- ==========================================
 -- حذف جدول‌های موجود (برای اجرای مجدد)
--- ترتیب حذف: معکوس ترتیب ساخت
 -- ==========================================
 DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS orders;
-DROP TABLE IF EXISTS branch_inventory;
+DROP TABLE IF EXISTS branch_branch_stock;
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS batches;
 DROP TABLE IF EXISTS product_images;
@@ -26,7 +25,6 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 -- ==========================================
 -- جدول 1: categories
--- دسته‌بندی محصولات به صورت درختی
 -- ==========================================
 CREATE TABLE categories (
   id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -52,7 +50,6 @@ CREATE TABLE categories (
 
 -- ==========================================
 -- جدول 2: branches
--- شعبات فیزیکی فروشگاه
 -- ==========================================
 CREATE TABLE branches (
   id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -73,7 +70,6 @@ CREATE TABLE branches (
 
 -- ==========================================
 -- جدول 3: products
--- اطلاعات پایه محصول (قیمت در product_variants)
 -- ==========================================
 CREATE TABLE products (
   id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -102,23 +98,28 @@ CREATE TABLE products (
 
 -- ==========================================
 -- جدول 4: product_variants
--- وزن و قیمت هر محصول
+-- هر محصول می‌تواند چندین بسته‌بندی مختلف داشته باشد
+-- مثال: پسته 500 گرم در کیسه پلاستیکی، جعبه هدیه، قوطی
 -- ==========================================
 CREATE TABLE product_variants (
-  id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  product_id     INT UNSIGNED NOT NULL,
-  weight_gram    INT UNSIGNED NOT NULL,
-  price          DECIMAL(12, 0) NOT NULL,
-  compare_price  DECIMAL(12, 0) NULL,
-  sku            VARCHAR(50) NULL,
-  image_url      VARCHAR(500) NULL,
-  is_active      TINYINT(1) NOT NULL DEFAULT 1,
-  created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  product_id       INT UNSIGNED NOT NULL,
+  weight_gram      INT UNSIGNED NOT NULL,
+  packaging_type   VARCHAR(50) NOT NULL DEFAULT 'standard',
+  packaging_label  VARCHAR(100) NULL,
+  price            DECIMAL(12, 0) NOT NULL,
+  compare_price    DECIMAL(12, 0) NULL,
+  sku              VARCHAR(50) NULL,
+  image_url        VARCHAR(500) NULL,
+  is_active        TINYINT(1) NOT NULL DEFAULT 1,
+  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uk_variants_sku (sku),
-  UNIQUE KEY uk_variants_product_weight (product_id, weight_gram),
+  UNIQUE KEY uk_variants_product_weight_packaging
+    (product_id, weight_gram, packaging_type),
   KEY idx_variants_product_active (product_id, is_active),
+  KEY idx_variants_weight (weight_gram),
   CONSTRAINT fk_variants_product
     FOREIGN KEY (product_id) REFERENCES products(id)
     ON DELETE CASCADE
@@ -128,7 +129,6 @@ CREATE TABLE product_variants (
 
 -- ==========================================
 -- جدول 5: product_images
--- تصاویر محصولات (فقط URL)
 -- ==========================================
 CREATE TABLE product_images (
   id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -150,7 +150,6 @@ CREATE TABLE product_images (
 
 -- ==========================================
 -- جدول 6: batches
--- شناسنامه بچ تولید
 -- ==========================================
 CREATE TABLE batches (
   id                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -161,19 +160,15 @@ CREATE TABLE batches (
   roast_date             DATE NULL,
   pack_date              DATE NULL,
   expiry_date            DATE NULL,
-
-  -- تازگی
   freshness_mode         ENUM('MANUAL', 'AUTO') NOT NULL DEFAULT 'MANUAL',
   freshness_score        TINYINT UNSIGNED NOT NULL DEFAULT 100,
   freshness_base_score   TINYINT UNSIGNED NOT NULL DEFAULT 100,
   freshness_base_date    DATE NULL,
   freshness_annual_decay TINYINT UNSIGNED NOT NULL DEFAULT 50,
-
   qc_note                TEXT NULL,
   is_active              TINYINT(1) NOT NULL DEFAULT 1,
   created_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
   PRIMARY KEY (id),
   UNIQUE KEY uk_batches_code (batch_code),
   KEY idx_batches_product (product_id),
@@ -186,33 +181,33 @@ CREATE TABLE batches (
 
 
 -- ==========================================
--- جدول 7: branch_inventory
--- موجودی هر وزن محصول در هر شعبه
+-- جدول 7: product_branch_stock
+-- موجودی هر محصول در هر شعبه بر اساس وزن
+-- هر محصول یک وزن کل در هر شعبه دارد
+-- بسته‌بندی‌ها از این وزن مصرف می‌کنند
 -- ==========================================
-CREATE TABLE branch_inventory (
-  id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  branch_id   INT UNSIGNED NOT NULL,
-  variant_id  INT UNSIGNED NOT NULL,
-  stock       INT NOT NULL DEFAULT 0,
-  reserved    INT NOT NULL DEFAULT 0,
-  updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CREATE TABLE product_branch_stock (
+  id                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  branch_id              INT UNSIGNED NOT NULL,
+  product_id             INT UNSIGNED NOT NULL,
+  total_weight_grams     INT NOT NULL DEFAULT 0,
+  reserved_weight_grams  INT NOT NULL DEFAULT 0,
+  updated_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uk_inventory_branch_variant (branch_id, variant_id),
-  KEY idx_inventory_variant (variant_id),
-  CONSTRAINT fk_inventory_branch
+  UNIQUE KEY uk_product_branch_stock (branch_id, product_id),
+  KEY idx_product_branch_stock_product (product_id),
+  CONSTRAINT fk_product_branch_stock_branch
     FOREIGN KEY (branch_id) REFERENCES branches(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  CONSTRAINT fk_inventory_variant
-    FOREIGN KEY (variant_id) REFERENCES product_variants(id)
+  CONSTRAINT fk_product_branch_stock_product
+    FOREIGN KEY (product_id) REFERENCES products(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- ==========================================
 -- جدول 8: admin_users
--- کاربران پنل ادمین
 -- ==========================================
 CREATE TABLE admin_users (
   id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -232,7 +227,6 @@ CREATE TABLE admin_users (
 
 -- ==========================================
 -- جدول 9: customers
--- مشتریان فروشگاه
 -- ==========================================
 CREATE TABLE customers (
   id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -265,11 +259,6 @@ CREATE TABLE customers (
 
 -- ==========================================
 -- جدول 10: orders
--- سفارشات مشتریان
--- ==========================================
--- ==========================================
--- جدول 10: orders
--- سفارشات مشتریان
 -- ==========================================
 CREATE TABLE orders (
   id                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -278,19 +267,13 @@ CREATE TABLE orders (
   customer_name         VARCHAR(100) NOT NULL,
   customer_phone        VARCHAR(15) NOT NULL,
   customer_email        VARCHAR(100) NULL,
-
-  -- اطلاعات آدرس
-  address               TEXT NULL,
-  city                  VARCHAR(100) NULL,
   province              VARCHAR(100) NULL,
+  city                  VARCHAR(100) NULL,
+  address               TEXT NULL,
   postal_code           VARCHAR(10) NULL,
-
-  -- مبالغ
-  subtotal              DECIMAL(12, 0) NOT NULL,
+  subtotal              DECIMAL(12, 0) NOT NULL DEFAULT 0,
   shipping_cost         DECIMAL(12, 0) NOT NULL DEFAULT 0,
   total_amount          DECIMAL(12, 0) NOT NULL,
-
-  -- وضعیت سفارش
   status                ENUM(
                           'PENDING',
                           'PAID',
@@ -299,25 +282,17 @@ CREATE TABLE orders (
                           'DELIVERED',
                           'CANCELLED'
                         ) NOT NULL DEFAULT 'PENDING',
-
-  -- روش تحویل
   delivery_method       ENUM('SHIPPING', 'PICKUP') NOT NULL DEFAULT 'SHIPPING',
   shipping_provider     ENUM('SNAPP', 'POST', 'NONE') NOT NULL DEFAULT 'NONE',
-
-  -- پرداخت
   payment_method        VARCHAR(20) NULL,
   payment_ref           VARCHAR(100) NULL,
   payment_authority     VARCHAR(100) NULL,
   payment_verified_at   TIMESTAMP NULL,
-
-  -- انبار
   branch_id             INT UNSIGNED NULL,
   tracking_code         VARCHAR(50) NULL,
   note                  TEXT NULL,
-
   created_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
   PRIMARY KEY (id),
   UNIQUE KEY uk_orders_number (order_number),
   KEY idx_orders_status (status),
@@ -338,18 +313,19 @@ CREATE TABLE orders (
 
 -- ==========================================
 -- جدول 11: order_items
--- اقلام سفارش (snapshot داده)
 -- ==========================================
 CREATE TABLE order_items (
-  id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  order_id        INT UNSIGNED NOT NULL,
-  product_id      INT UNSIGNED NOT NULL,
-  variant_id      INT UNSIGNED NOT NULL,
-  product_name    VARCHAR(200) NOT NULL,
-  weight_gram     INT UNSIGNED NOT NULL,
-  price           DECIMAL(12, 0) NOT NULL,
-  quantity        INT UNSIGNED NOT NULL DEFAULT 1,
-  created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_id          INT UNSIGNED NOT NULL,
+  product_id        INT UNSIGNED NOT NULL,
+  variant_id        INT UNSIGNED NOT NULL,
+  product_name      VARCHAR(200) NOT NULL,
+  weight_gram       INT UNSIGNED NOT NULL,
+  packaging_type    VARCHAR(50) NOT NULL DEFAULT 'standard',
+  packaging_label   VARCHAR(100) NULL,
+  price             DECIMAL(12, 0) NOT NULL,
+  quantity          INT UNSIGNED NOT NULL DEFAULT 1,
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_order_items_order (order_id),
   KEY idx_order_items_product (product_id),

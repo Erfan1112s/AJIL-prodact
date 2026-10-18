@@ -12,28 +12,27 @@ import {
 
 export default function Footer() {
   return (
-    <footer className="mt-20 bg-coffee-900 text-coffee-300">
-      {/* نوار مزایا */}
-      <div className="border-b border-coffee-800">
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+    <footer className="mt-20 bg-coffee-900 text-coffee-300" aria-label="پاورقی سایت">
+      <div className="border-b border-coffee-800/90">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <Feature
-              icon={<TruckIcon className="w-6 h-6" />}
+              icon={<TruckIcon className="h-6 w-6" />}
               title="ارسال سریع"
               desc="به سراسر کشور"
             />
             <Feature
-              icon={<ShieldIcon className="w-6 h-6" />}
+              icon={<ShieldIcon className="h-6 w-6" />}
               title="پرداخت امن"
               desc="درگاه معتبر"
             />
             <Feature
-              icon={<LeafIcon className="w-6 h-6" />}
+              icon={<LeafIcon className="h-6 w-6" />}
               title="تضمین تازگی"
               desc="شناسنامه بچ"
             />
             <Feature
-              icon={<PhoneIcon className="w-6 h-6" />}
+              icon={<PhoneIcon className="h-6 w-6" />}
               title="پشتیبانی"
               desc="۹ صبح تا ۹ شب"
             />
@@ -41,35 +40,34 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* محتوای اصلی */}
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* معرفی */}
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-12">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-coffee-900 text-lg font-bold shadow-lg shadow-gold-500/30">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-gold-300 via-gold-500 to-gold-600 text-lg font-black text-coffee-900 shadow-[0_8px_18px_rgba(245,158,11,0.25)]">
                 آ
               </div>
-              <span className="font-bold text-cream-50 text-lg">
+              <span className="text-lg font-black text-cream-50">
                 آجیل و خشکبار
               </span>
             </div>
-            <p className="text-sm leading-7 text-coffee-400 max-w-md">
-              فروشگاه آنلاین آجیل و خشکبار با تأمین مستقیم از باغات.
-              تمام محصولات دارای شناسنامه بچ و امتیاز تازگی هستند.
+
+            <p className="max-w-lg text-sm leading-7 text-coffee-400">
+              فروشگاه آنلاین آجیل و خشکبار با تأمین مستقیم از باغات و شعبه‌های
+              منتخب. محصولات ما با رعایت استانداردهای تازه‌سازی و شناسنامه
+              کامل، تجربه‌ای مطمئن برای مشتریان فراهم می‌کنند.
             </p>
           </div>
 
-          {/* لینک‌ها */}
           <div>
-            <h3 className="text-gold-400 font-semibold mb-4 text-sm">
+            <h3 className="mb-4 text-sm font-bold text-gold-400">
               دسترسی سریع
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
                   href="/products"
-                  className="text-coffee-400 hover:text-gold-400 transition-colors"
+                  className="text-coffee-400 transition-colors hover:text-gold-400"
                 >
                   همه محصولات
                 </Link>
@@ -77,7 +75,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/categories"
-                  className="text-coffee-400 hover:text-gold-400 transition-colors"
+                  className="text-coffee-400 transition-colors hover:text-gold-400"
                 >
                   دسته‌بندی‌ها
                 </Link>
@@ -85,7 +83,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/about"
-                  className="text-coffee-400 hover:text-gold-400 transition-colors"
+                  className="text-coffee-400 transition-colors hover:text-gold-400"
                 >
                   درباره ما
                 </Link>
@@ -93,7 +91,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/contact"
-                  className="text-coffee-400 hover:text-gold-400 transition-colors"
+                  className="text-coffee-400 transition-colors hover:text-gold-400"
                 >
                   تماس با ما
                 </Link>
@@ -101,21 +99,23 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* تماس */}
           <div>
-            <h3 className="text-gold-400 font-semibold mb-4 text-sm">
+            <h3 className="mb-4 text-sm font-bold text-gold-400">
               تماس
             </h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2">
-                <PhoneIcon className="w-4 h-4 mt-0.5 shrink-0 text-gold-400" />
-                <span className="text-coffee-400 fa-num">
+                <PhoneIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-400" />
+                <a
+                  href="tel:02188776655"
+                  className="fa-num text-coffee-400 transition-colors hover:text-gold-400"
+                >
                   ۰۲۱-۸۸۷۷۶۶۵۵
-                </span>
+                </a>
               </li>
               <li className="flex items-start gap-2">
-                <MapPinIcon className="w-4 h-4 mt-0.5 shrink-0 text-gold-400" />
-                <span className="text-coffee-400 leading-6">
+                <MapPinIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-400" />
+                <span className="leading-6 text-coffee-400">
                   تهران، خیابان ولیعصر، پلاک ۱۲۰۰
                 </span>
               </li>
@@ -123,7 +123,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* جداکننده طلایی */}
         <div className="divider-gold mt-10 mb-6 opacity-30" />
 
         <div className="text-center text-xs text-coffee-500">
@@ -144,13 +143,13 @@ function Feature({
   desc: string;
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="w-10 h-10 rounded-lg bg-coffee-800 border border-gold-700/30 flex items-center justify-center text-gold-400 shrink-0">
+    <div className="flex items-start gap-3 rounded-2xl border border-coffee-700/50 bg-coffee-800/60 p-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold-700/30 bg-coffee-900 text-gold-400">
         {icon}
       </div>
       <div>
-        <div className="text-cream-100 text-sm font-medium">{title}</div>
-        <div className="text-coffee-500 text-xs mt-0.5">{desc}</div>
+        <div className="text-sm font-bold text-cream-100">{title}</div>
+        <div className="mt-0.5 text-[11px] text-coffee-500">{desc}</div>
       </div>
     </div>
   );

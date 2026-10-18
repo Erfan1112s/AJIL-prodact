@@ -14,6 +14,8 @@ import { getCurrentUserId } from '@/lib/auth/session';
 export interface VariantInput {
   id?: number;
   weight_gram: number;
+  packaging_type: string;
+  packaging_label: string;
   price: number;
   compare_price: number | null;
   sku: string | null;
@@ -82,9 +84,21 @@ function validate(input: ProductFormInput): string | null {
   if (input.variants.length === 0) {
     return 'حداقل یک وزن (واریانت) اضافه کنید';
   }
+
+  // بررسی تکراری نبودن (وزن + بسته‌بندی)
+  const seen = new Set<string>();
   for (const v of input.variants) {
     if (!v.weight_gram || v.weight_gram <= 0) {
       return 'وزن هر واریانت باید عددی مثبت باشد';
+    }
+    if (!v.packaging_type || v.packaging_type.trim().length === 0) {
+      return 'نوع بسته‌بندی هر واریانت اجباری است';
+    }
+    if (v.packaging_type.length > 50) {
+      return 'نوع بسته‌بندی نمی‌تواند بیش از 50 کاراکتر باشد';
+    }
+    if (v.packaging_label && v.packaging_label.length > 100) {
+      return 'برچسب بسته‌بندی نمی‌تواند بیش از 100 کاراکتر باشد';
     }
     if (!v.price || v.price <= 0) {
       return 'قیمت هر واریانت باید عددی مثبت باشد';
@@ -92,14 +106,24 @@ function validate(input: ProductFormInput): string | null {
     if (v.compare_price !== null && v.compare_price <= v.price) {
       return 'قیمت قبل از تخفیف باید بیشتر از قیمت فعلی باشد';
     }
+
+    // چک تکراری
+    const key = `${v.weight_gram}-${v.packaging_type.trim().toLowerCase()}`;
+    if (seen.has(key)) {
+      return `دو واریانت با وزن ${v.weight_gram} گرم و بسته‌بندی یکسان وجود دارد`;
+    }
+    seen.add(key);
   }
+
+  // اعتبارسنجی batch
   if (input.batch.batch_code.trim()) {
     if (!/^[A-Za-z0-9-]+$/.test(input.batch.batch_code.trim())) {
       return 'کد بچ باید فقط شامل حروف، اعداد و خط تیره باشد';
     }
     if (
       input.batch.freshness_mode === 'MANUAL' &&
-      (input.batch.freshness_score < 0 || input.batch.freshness_score > 100)
+      (input.batch.freshness_score < 0 ||
+        input.batch.freshness_score > 100)
     ) {
       return 'امتیاز تازگی باید بین 0 تا 100 باشد';
     }
@@ -110,11 +134,12 @@ function validate(input: ProductFormInput): string | null {
       return 'درصد کاهش سالانه باید بین 0 تا 100 باشد';
     }
   }
+
   return null;
 }
 
 // ==========================================
-// ساخت slug از نام
+// ساخت slug
 // ==========================================
 
 function toSlug(text: string): string {
@@ -128,7 +153,7 @@ function toSlug(text: string): string {
 }
 
 // ==========================================
-// نرمال‌سازی تاریخ (تبدیل رشته خالی به null)
+// نرمال‌سازی تاریخ
 // ==========================================
 
 function normalizeDate(value: string | null | undefined): string | null {
@@ -138,19 +163,17 @@ function normalizeDate(value: string | null | undefined): string | null {
 }
 
 // ==========================================
-// ایجاد یا به‌روزرسانی محصول
+// ذخیره محصول
 // ==========================================
 
 export async function saveProductAction(
   input: ProductFormInput
 ): Promise<ActionResult<{ productId: number }>> {
-  // چک احراز هویت
   const adminId = await getCurrentUserId();
   if (!adminId) {
     return { ok: false, error: 'دسترسی غیرمجاز' };
   }
 
-  // اعتبارسنجی
   const validationError = validate(input);
   if (validationError) {
     return { ok: false, error: validationError };
@@ -174,7 +197,7 @@ export async function saveProductAction(
     };
   }
 
-  // چک یکتا بودن batch_code (اگر batch داده شده)
+  // چک یکتا بودن batch_code
   const batchCode = input.batch.batch_code.trim();
   if (batchCode) {
     const batchCheckParams: unknown[] = [batchCode];
@@ -202,9 +225,7 @@ export async function saveProductAction(
     const productId = await transaction(async (conn) => {
       let pid: number;
 
-      // ==========================================
       // 1. ذخیره محصول
-      // ==========================================
       if (input.id) {
         await conn.query(
           `UPDATE products SET
@@ -248,9 +269,7 @@ export async function saveProductAction(
         pid = (result as any).insertId as number;
       }
 
-      // ==========================================
       // 2. حذف واریانت‌های قدیمی
-      // ==========================================
       const inputVariantIds = input.variants
         .filter((v) => v.id)
         .map((v) => v.id);
@@ -269,9 +288,7 @@ export async function saveProductAction(
         );
       }
 
-      // ==========================================
       // 3. حذف تصاویر قدیمی
-      // ==========================================
       const inputImageIds = input.images
         .filter((img) => img.id)
         .map((img) => img.id);
@@ -290,18 +307,19 @@ export async function saveProductAction(
         );
       }
 
-      // ==========================================
       // 4. درج یا به‌روزرسانی واریانت‌ها
-      // ==========================================
       for (const v of input.variants) {
         if (v.id) {
           await conn.query(
             `UPDATE product_variants SET
-               weight_gram = ?, price = ?, compare_price = ?,
+               weight_gram = ?, packaging_type = ?, packaging_label = ?,
+               price = ?, compare_price = ?,
                sku = ?, image_url = ?, is_active = ?
              WHERE id = ? AND product_id = ?`,
             [
               v.weight_gram,
+              v.packaging_type.trim(),
+              v.packaging_label.trim() || null,
               v.price,
               v.compare_price,
               v.sku?.trim() || null,
@@ -314,12 +332,14 @@ export async function saveProductAction(
         } else {
           await conn.query(
             `INSERT INTO product_variants
-               (product_id, weight_gram, price, compare_price,
-                sku, image_url, is_active)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+               (product_id, weight_gram, packaging_type, packaging_label,
+                price, compare_price, sku, image_url, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               pid,
               v.weight_gram,
+              v.packaging_type.trim(),
+              v.packaging_label.trim() || null,
               v.price,
               v.compare_price,
               v.sku?.trim() || null,
@@ -330,9 +350,7 @@ export async function saveProductAction(
         }
       }
 
-      // ==========================================
       // 5. درج یا به‌روزرسانی تصاویر
-      // ==========================================
       for (const img of input.images) {
         if (!img.url.trim()) continue;
 
@@ -366,13 +384,10 @@ export async function saveProductAction(
         }
       }
 
-      // ==========================================
-      // 6. ذخیره Batch (تازگی)
-      // ==========================================
+      // 6. ذخیره Batch
       if (batchCode) {
         const batch = input.batch;
 
-        // بررسی وجود batch فعلی
         const existingBatch =
           batch.id !== undefined
             ? await conn.query(
@@ -463,10 +478,11 @@ export async function saveProductAction(
         error: 'کد SKU یکی از واریانت‌ها تکراری است',
       };
     }
-    if (message.includes('uk_variants_product_weight')) {
+    if (message.includes('uk_variants_product_weight_packaging')) {
       return {
         ok: false,
-        error: 'دو واریانت با وزن یکسان نمی‌توانند وجود داشته باشند',
+        error:
+          'دو واریانت با وزن و نوع بسته‌بندی یکسان نمی‌توانند وجود داشته باشند',
       };
     }
     if (message.includes('uk_batches_code')) {
@@ -476,20 +492,13 @@ export async function saveProductAction(
         field: 'batch_code',
       };
     }
-    if (message === 'کد بچ تکراری است') {
-      return {
-        ok: false,
-        error: message,
-        field: 'batch_code',
-      };
-    }
 
     return { ok: false, error: 'خطا در ذخیره محصول' };
   }
 }
 
 // ==========================================
-// تغییر وضعیت فعال محصول
+// تغییر وضعیت فعال
 // ==========================================
 
 export async function toggleProductActiveAction(
@@ -511,7 +520,7 @@ export async function toggleProductActiveAction(
 }
 
 // ==========================================
-// حذف کامل محصول
+// حذف محصول
 // ==========================================
 
 export async function deleteProductAction(
@@ -520,7 +529,6 @@ export async function deleteProductAction(
   const adminId = await getCurrentUserId();
   if (!adminId) return { ok: false, error: 'دسترسی غیرمجاز' };
 
-  // چک: آیا این محصول در سفارشی استفاده شده؟
   const usedInOrders = await queryRows<{ cnt: number }>(
     `SELECT COUNT(*) AS cnt FROM order_items WHERE product_id = ? LIMIT 1`,
     [productId]
@@ -545,7 +553,7 @@ export async function deleteProductAction(
 }
 
 // ==========================================
-// تولید slug خودکار
+// تولید slug
 // ==========================================
 
 export async function generateSlugAction(
@@ -555,7 +563,7 @@ export async function generateSlugAction(
 }
 
 // ==========================================
-// تغییر سریع قیمت واریانت
+// تغییر سریع قیمت
 // ==========================================
 
 export async function updateVariantPriceAction(

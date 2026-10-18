@@ -5,10 +5,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProductBySlug } from '@/lib/queries/products';
-import { getVariantAvailability } from '@/lib/queries/branches';
+import { getVariantAvailability, getTotalStockForVariant } from '@/lib/queries/branches';
 import ProductDetailClient from '@/components/ProductDetailClient';
 import Container from '@/components/Container';
 import { MapPinIcon } from '@/components/icons';
+import { formatDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,15 +39,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function formatDate(date: Date | null): string {
-  if (!date) return 'ثبت نشده';
-  return new Intl.DateTimeFormat('fa-IR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(new Date(date));
-}
-
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
 
@@ -54,14 +46,17 @@ export default async function ProductPage({ params }: Props) {
   if (!product) notFound();
 
   const firstVariant = product.variants[0];
-  const branchStock = firstVariant
-    ? await getVariantAvailability(firstVariant.id)
-    : [];
+  const [branchStock, variantStockMap] = await Promise.all([
+    firstVariant ? getVariantAvailability(firstVariant.id) : Promise.resolve([]),
+    Promise.all(
+      product.variants.map(async (variant) => [
+        variant.id,
+        await getTotalStockForVariant(variant.id),
+      ])
+    ).then((entries) => Object.fromEntries(entries)),
+  ]);
 
-  const totalAvailable = branchStock.reduce(
-    (sum, b) => sum + b.available,
-    0
-  );
+  const totalAvailable = branchStock.reduce((sum, b) => sum + (b.available ?? 0), 0);
 
   return (
     <main className="min-h-screen">
@@ -85,7 +80,7 @@ export default async function ProductPage({ params }: Props) {
 
       {/* کلاینت اصلی: Hero + انتخاب واریانت + اطلاعات سریع */}
       <Container className="py-6 sm:py-8">
-        <ProductDetailClient product={product} />
+        <ProductDetailClient product={product} variantStockMap={variantStockMap} />
       </Container>
 
       {/* توضیحات کامل */}
@@ -200,11 +195,10 @@ export default async function ProductPage({ params }: Props) {
                 </h2>
               </div>
               <span
-                className={`text-xs px-3 py-1 rounded-full fa-num ${
-                  totalAvailable > 0
+                className={`text-xs px-3 py-1 rounded-full fa-num ${totalAvailable > 0
                     ? 'bg-brand-50 text-brand-700'
                     : 'bg-cream-100 text-coffee-500'
-                }`}
+                  }`}
               >
                 {totalAvailable > 0
                   ? `${totalAvailable.toLocaleString('fa-IR')} عدد در دسترس`
@@ -276,9 +270,8 @@ function BatchRow({
     <tr className={!isLast ? 'border-b border-coffee-100' : ''}>
       <td className="px-5 py-3.5 text-coffee-500 text-sm w-1/3">{label}</td>
       <td
-        className={`px-5 py-3.5 text-sm ${
-          highlight ? 'text-gold-700 font-semibold' : 'text-coffee-800'
-        } ${ltr ? 'fa-num' : ''}`}
+        className={`px-5 py-3.5 text-sm ${highlight ? 'text-gold-700 font-semibold' : 'text-coffee-800'
+          } ${ltr ? 'fa-num' : ''}`}
         dir={ltr ? 'ltr' : 'rtl'}
       >
         {value}

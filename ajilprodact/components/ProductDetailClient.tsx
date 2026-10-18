@@ -11,9 +11,13 @@ import type { ProductDetail } from '@/lib/types';
 
 interface Props {
   product: ProductDetail;
+  variantStockMap?: Record<number, number>;
 }
 
-export default function ProductDetailClient({ product }: Props) {
+export default function ProductDetailClient({
+  product,
+  variantStockMap = {},
+}: Props) {
   // واریانت پیش‌فرض: اولی
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
     product.variants[0]?.id ?? null
@@ -53,12 +57,17 @@ export default function ProductDetailClient({ product }: Props) {
               productImage={activeImage}
               selectedVariantId={selectedVariantId}
               onVariantChange={setSelectedVariantId}
+              variantStockMap={variantStockMap}
             />
           </div>
         </div>
 
         {/* ستون کنار: اطلاعات سریع */}
-        <SideInfo product={product} selectedVariant={selectedVariant} />
+        <SideInfo
+          product={product}
+          selectedVariant={selectedVariant}
+          variantStockMap={variantStockMap}
+        />
       </div>
     </div>
   );
@@ -71,12 +80,17 @@ export default function ProductDetailClient({ product }: Props) {
 function SideInfo({
   product,
   selectedVariant,
+  variantStockMap,
 }: {
   product: ProductDetail;
   selectedVariant: ProductDetail['variants'][0] | null;
+  variantStockMap: Record<number, number>;
 }) {
   // محاسبه موجودی واریانت انتخاب‌شده
-  const totalStock = product.variants.reduce((sum, v) => sum + 1, 0);
+  const totalStock =
+    selectedVariant && variantStockMap[selectedVariant.id] !== undefined
+      ? variantStockMap[selectedVariant.id]
+      : 0;
 
   return (
     <div className="space-y-3">
@@ -85,7 +99,7 @@ function SideInfo({
         <div className="text-xs text-coffee-500 mb-2">موجودی فعلی</div>
         <div className="text-lg font-bold text-gold-700 fa-num">
           {selectedVariant
-            ? `${totalStock.toLocaleString('fa-IR')} وزن`
+            ? `${totalStock.toLocaleString('fa-IR')} عدد`
             : 'ناموجود'}
         </div>
         <div className="text-[11px] text-coffee-500 mt-1">

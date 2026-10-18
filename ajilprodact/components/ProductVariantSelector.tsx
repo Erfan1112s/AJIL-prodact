@@ -1,5 +1,5 @@
 // components/ProductVariantSelector.tsx
-// انتخاب وزن و افزودن به سبد - با callback برای تغییر تصویر والد
+// انتخاب وزن و بسته‌بندی با نمایش کامل
 
 'use client';
 
@@ -15,13 +15,32 @@ interface Props {
   productName: string;
   productSlug: string;
   productImage: string | null;
-  // state واریانت انتخاب‌شده از والد
   selectedVariantId: number | null;
   onVariantChange: (variantId: number) => void;
+  variantStockMap?: Record<number, number>;
 }
 
 function formatPrice(price: number): string {
   return price.toLocaleString('fa-IR');
+}
+
+// برچسب خوانا برای بسته‌بندی
+function getPackagingLabel(
+  type: string,
+  custom: string | null
+): string {
+  if (custom && custom.trim()) return custom.trim();
+  if (type === 'standard') return ''; // برای معمولی چیزی نشان نده
+  const labels: Record<string, string> = {
+    plastic: 'کیسه پلاستیکی',
+    paper: 'کیسه کاغذی',
+    box: 'جعبه',
+    gift_box: 'جعبه هدیه',
+    can: 'قوطی حلبی',
+    vacuum: 'وکیوم',
+    jar: 'شیشه',
+  };
+  return labels[type] ?? type;
 }
 
 export default function ProductVariantSelector({
@@ -32,6 +51,7 @@ export default function ProductVariantSelector({
   productImage,
   selectedVariantId,
   onVariantChange,
+  variantStockMap = {},
 }: Props) {
   const { addItem } = useCart();
   const [buttonState, setButtonState] = useState<'idle' | 'adding' | 'added'>(
@@ -68,7 +88,6 @@ export default function ProductVariantSelector({
       productSlug,
       weightGram: selected.weight_gram,
       price: selected.price,
-      // تصویر: اگر واریانت دارد، از آن. وگرنه تصویر محصول
       imageUrl: selected.image_url ?? productImage,
     });
 
@@ -78,24 +97,24 @@ export default function ProductVariantSelector({
   const discountPercent =
     selected?.compare_price && selected.compare_price > selected.price
       ? Math.round(
-          ((selected.compare_price - selected.price) /
-            selected.compare_price) *
-            100
-        )
+        ((selected.compare_price - selected.price) /
+          selected.compare_price) *
+        100
+      )
       : 0;
 
   return (
     <div id="variant-selector" className="space-y-6">
       {/* ==========================================
-          انتخاب وزن - با تصویر کوچک
+          انتخاب واریانت
           ========================================== */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-semibold text-coffee-900">
-            انتخاب وزن
+            انتخاب وزن و بسته‌بندی
           </span>
           <span className="text-xs text-coffee-500 fa-num">
-            {variants.length.toLocaleString('fa-IR')} وزن موجود
+            {variants.length.toLocaleString('fa-IR')} گزینه موجود
           </span>
         </div>
 
@@ -105,19 +124,25 @@ export default function ProductVariantSelector({
             const hasDiscount =
               v.compare_price && v.compare_price > v.price;
             const hasImage = Boolean(v.image_url);
+            const packagingText = getPackagingLabel(
+              v.packaging_type,
+              v.packaging_label
+            );
+            const hasPackaging = packagingText.length > 0;
+            const stockCount = variantStockMap[v.id] ?? 0;
+            const hasStock = stockCount > 0;
 
             return (
               <button
                 key={v.id}
                 type="button"
                 onClick={() => onVariantChange(v.id)}
-                className={`group relative overflow-hidden rounded-2xl border-2 text-right transition-all duration-200 ${
-                  isSelected
+                className={`group relative overflow-hidden rounded-2xl border-2 text-right transition-all duration-200 ${isSelected
                     ? 'border-gold-500 bg-gold-50 shadow-md shadow-gold-500/20 scale-[1.02]'
                     : 'border-coffee-200 bg-white hover:border-gold-300 hover:scale-[1.01]'
-                }`}
+                  }`}
               >
-                {/* تصویر واریانت (اگر هست) */}
+                {/* تصویر واریانت */}
                 {hasImage && (
                   <div className="aspect-[4/3] relative overflow-hidden">
                     <Image
@@ -127,32 +152,58 @@ export default function ProductVariantSelector({
                       sizes="200px"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    {/* گرادیانت پایین برای خوانایی */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                   </div>
                 )}
 
                 {/* اطلاعات */}
                 <div className={`p-3 ${hasImage ? 'pt-2' : ''}`}>
+                  {/* وزن */}
                   <div
-                    className={`font-bold text-sm fa-num mb-1 ${
-                      hasImage
+                    className={`font-bold text-sm fa-num mb-1 ${hasImage
                         ? 'text-coffee-900'
                         : isSelected
                           ? 'text-gold-700'
                           : 'text-coffee-800'
-                    }`}
+                      }`}
                   >
                     {v.weight_gram.toLocaleString('fa-IR')}
                     <span className="text-xs font-normal mr-1">گرم</span>
                   </div>
+
+                  {/* بسته‌بندی (اگر غیرمعمولی بود) */}
+                  {hasPackaging && (
+                    <div
+                      className={`text-[10px] mb-1.5 ${isSelected
+                          ? 'text-gold-700 font-medium'
+                          : 'text-coffee-600'
+                        }`}
+                    >
+                      {packagingText}
+                    </div>
+                  )}
+
+                  {/* قیمت */}
                   <div
-                    className={`text-[11px] fa-num ${
-                      isSelected ? 'text-gold-700' : 'text-coffee-500'
-                    }`}
+                    className={`text-[11px] fa-num ${isSelected ? 'text-gold-700' : 'text-coffee-500'
+                      }`}
                   >
                     {formatPrice(v.price)}
                     <span className="text-[9px] mr-0.5">تومان</span>
+                  </div>
+
+                  {/* موجودی */}
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full ${hasStock
+                          ? 'bg-green-50 text-green-700'
+                          : 'bg-cream-100 text-coffee-500'
+                        }`}
+                    >
+                      {hasStock
+                        ? `${stockCount.toLocaleString('fa-IR')} عدد`
+                        : 'ناموجود'}
+                    </span>
                   </div>
                 </div>
 
@@ -183,6 +234,22 @@ export default function ProductVariantSelector({
           ========================================== */}
       {selected && (
         <div className="rounded-2xl border border-gold-200 bg-gradient-to-b from-gold-50 to-cream-50 p-5">
+          {/* انتخاب فعلی */}
+          <div className="mb-3 pb-3 border-b border-gold-200/60">
+            <div className="text-[10px] text-coffee-500 mb-1">
+              انتخاب شما
+            </div>
+            <div className="text-sm font-bold text-coffee-900">
+              {selected.weight_gram.toLocaleString('fa-IR')} گرم
+              {getPackagingLabel(selected.packaging_type, selected.packaging_label) && (
+                <span className="text-coffee-600 font-normal mr-2">
+                  — {getPackagingLabel(selected.packaging_type, selected.packaging_label)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* قیمت */}
           <div className="flex items-end justify-between mb-4 flex-wrap gap-3">
             <div>
               <div className="text-xs text-coffee-500 mb-1">قیمت</div>
@@ -208,34 +275,32 @@ export default function ProductVariantSelector({
             )}
           </div>
 
+          {/* دکمه‌ها */}
           <div className="space-y-2">
             <div className="relative">
               <button
                 type="button"
                 onClick={handleAddToCart}
                 disabled={buttonState !== 'idle'}
-                className={`group/btn relative w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl transition-all duration-300 overflow-hidden disabled:cursor-not-allowed ${
-                  buttonState === 'idle'
+                className={`group/btn relative w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl transition-all duration-300 overflow-hidden disabled:cursor-not-allowed ${buttonState === 'idle'
                     ? 'btn-gold active:scale-[0.98]'
                     : buttonState === 'adding'
                       ? 'bg-gold-400 text-coffee-900 scale-[0.97]'
                       : 'bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-600/30'
-                }`}
+                  }`}
               >
                 <span className="relative w-5 h-5 flex items-center justify-center">
                   <CartIcon
-                    className={`absolute w-5 h-5 transition-all duration-300 ${
-                      buttonState === 'idle'
+                    className={`absolute w-5 h-5 transition-all duration-300 ${buttonState === 'idle'
                         ? 'opacity-100 scale-100 rotate-0'
                         : 'opacity-0 scale-0 rotate-90'
-                    }`}
+                      }`}
                   />
                   <CheckIcon
-                    className={`absolute w-5 h-5 transition-all duration-500 ${
-                      buttonState === 'added'
+                    className={`absolute w-5 h-5 transition-all duration-500 ${buttonState === 'added'
                         ? 'opacity-100 scale-100 rotate-0'
                         : 'opacity-0 scale-0 -rotate-90'
-                    }`}
+                      }`}
                   />
                 </span>
 

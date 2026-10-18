@@ -41,6 +41,8 @@ export interface ProductVariantRow {
   id: number;
   product_id: number;
   weight_gram: number;
+  packaging_type: string;
+  packaging_label: string | null;
   price: number;
   compare_price: number | null;
   sku: string | null;
@@ -99,14 +101,31 @@ export interface BranchRow {
   updated_at: Date;
 }
 
-// ردیف جدول branch_inventory
-export interface BranchInventoryRow {
+// ردیف جدول product_branch_stock
+export interface ProductBranchStockRow {
   id: number;
   branch_id: number;
-  variant_id: number;
+  product_id: number;
+  total_weight_grams: number;
+  reserved_weight_grams: number;
+  updated_at: Date;
+}
+
+// موجودی یک واریانت در یک شعبه (تایپ ترکیبی)
+export interface VariantBranchStock {
+  branch_id: number;
+  branch_name: string;
+  branch_slug: string;
+  branch_address: string | null;
+  branch_phone: string | null;
+  total_grams: number;
+  reserved_grams: number;
+  available_grams: number;
+  available_units: number;
+  // legacy aliases used by product page and older code
   stock: number;
   reserved: number;
-  updated_at: Date;
+  available: number;
 }
 
 // ردیف جدول customers
@@ -228,16 +247,4 @@ export interface ProductDetail {
   variants: ProductVariantRow[];
   images: ProductImageRow[];
   latest_batch: BatchRow | null;
-}
-
-// موجودی یک واریانت در یک شعبه
-export interface VariantBranchStock {
-  branch_id: number;
-  branch_name: string;
-  branch_slug: string;
-  branch_address: string | null;
-  branch_phone: string | null;
-  stock: number;
-  reserved: number;
-  available: number;
 }

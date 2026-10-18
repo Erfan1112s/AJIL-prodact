@@ -1,5 +1,5 @@
 // components/admin/products/ProductForm.tsx
-// فرم افزودن یا ویرایش محصول با آپلود تصویر واریانت و تنظیمات تازگی
+// فرم افزودن یا ویرایش محصول با بسته‌بندی چندگانه
 
 'use client';
 
@@ -10,6 +10,9 @@ import Link from 'next/link';
 import FormField from '@/components/auth/FormField';
 import Alert from '@/components/auth/Alert';
 import ImageUploader from '@/components/admin/products/ImageUploader';
+import VariantPackagingSelect, {
+  getPackagingLabel,
+} from '@/components/admin/products/VariantPackagingSelect';
 import { TrashIcon, PlusIcon } from '@/components/admin/icons';
 import { calculateAutoFreshness } from '@/lib/freshness';
 import {
@@ -47,9 +50,7 @@ export default function ProductForm({ categories, initial }: Props) {
 
   const isEdit = Boolean(initial?.id);
 
-  // ==========================================
-  // State فرم اصلی
-  // ==========================================
+  // state فرم
   const [name, setName] = useState(initial?.name ?? '');
   const [slug, setSlug] = useState(initial?.slug ?? '');
   const [shortDesc, setShortDesc] = useState(initial?.short_desc ?? '');
@@ -62,13 +63,13 @@ export default function ProductForm({ categories, initial }: Props) {
   const [metaTitle, setMetaTitle] = useState(initial?.meta_title ?? '');
   const [metaDesc, setMetaDesc] = useState(initial?.meta_desc ?? '');
 
-  // ==========================================
   // واریانت‌ها
-  // ==========================================
   const [variants, setVariants] = useState<VariantInput[]>(
     initial?.variants ?? [
       {
         weight_gram: 250,
+        packaging_type: 'standard',
+        packaging_label: '',
         price: 0,
         compare_price: null,
         sku: null,
@@ -78,14 +79,10 @@ export default function ProductForm({ categories, initial }: Props) {
     ]
   );
 
-  // ==========================================
-  // تصاویر محصول
-  // ==========================================
+  // تصاویر
   const [images, setImages] = useState<ImageInput[]>(initial?.images ?? []);
 
-  // ==========================================
-  // Batch (تازگی)
-  // ==========================================
+  // Batch
   const [batch, setBatch] = useState<BatchInput>(
     initial?.batch ?? {
       batch_code: '',
@@ -103,27 +100,20 @@ export default function ProductForm({ categories, initial }: Props) {
     }
   );
 
-  // ==========================================
-  // خطاها
-  // ==========================================
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState<
     number | null
   >(null);
 
-  // ==========================================
-  // تولید slug خودکار
-  // ==========================================
+  // تولید slug
   async function handleGenerateSlug() {
     if (!name.trim()) return;
     const result = await generateSlugAction(name);
     if (result.slug) setSlug(result.slug);
   }
 
-  // ==========================================
   // آپلود تصویر واریانت
-  // ==========================================
   async function handleVariantImageUpload(index: number, file: File) {
     setUploadingVariantIndex(index);
     try {
@@ -152,14 +142,14 @@ export default function ProductForm({ categories, initial }: Props) {
     }
   }
 
-  // ==========================================
   // مدیریت واریانت‌ها
-  // ==========================================
   function addVariant() {
     setVariants((v) => [
       ...v,
       {
         weight_gram: 500,
+        packaging_type: 'standard',
+        packaging_label: '',
         price: 0,
         compare_price: null,
         sku: null,
@@ -179,9 +169,7 @@ export default function ProductForm({ categories, initial }: Props) {
     );
   }
 
-  // ==========================================
-  // ارسال فرم
-  // ==========================================
+  // ارسال
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -234,9 +222,7 @@ export default function ProductForm({ categories, initial }: Props) {
     });
   }
 
-  // ==========================================
-  // پیش‌نمایش محاسبه تازگی خودکار
-  // ==========================================
+  // پیش‌نمایش تازگی خودکار
   const autoFreshnessPreview =
     batch.freshness_mode === 'AUTO'
       ? calculateAutoFreshness({
@@ -284,9 +270,7 @@ export default function ProductForm({ categories, initial }: Props) {
       {error && <Alert type="error">{error}</Alert>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* ==========================================
-            ستون اصلی
-            ========================================== */}
+        {/* ستون اصلی */}
         <div className="lg:col-span-2 space-y-5">
           {/* اطلاعات اصلی */}
           <Section title="اطلاعات اصلی">
@@ -375,11 +359,9 @@ export default function ProductForm({ categories, initial }: Props) {
             </div>
           </Section>
 
-          {/* ==========================================
-              واریانت‌ها (با تصویر)
-              ========================================== */}
+          {/* واریانت‌ها */}
           <Section
-            title="وزن‌ها، قیمت‌ها و تصاویر"
+            title="وزن‌ها، بسته‌بندی و قیمت‌ها"
             action={
               <button
                 type="button"
@@ -388,13 +370,19 @@ export default function ProductForm({ categories, initial }: Props) {
                 className="inline-flex items-center gap-1.5 text-xs text-gold-700 hover:text-gold-800 font-medium"
               >
                 <PlusIcon className="w-3.5 h-3.5" />
-                افزودن وزن
+                افزودن واریانت
               </button>
             }
           >
+            <div className="rounded-xl bg-gold-50 border border-gold-200 p-3 text-[11px] text-coffee-700 leading-5 mb-4">
+              هر محصول می‌تواند چندین بسته‌بندی از یک وزن داشته باشد.
+              مثلاً پسته ۵۰۰ گرم در کیسه پلاستیکی و پسته ۵۰۰ گرم در
+              جعبه هدیه، دو واریانت جداگانه با قیمت‌های متفاوت هستند.
+            </div>
+
             {variants.length === 0 ? (
               <div className="text-center py-6 text-sm text-coffee-500">
-                حداقل یک وزن اضافه کنید
+                حداقل یک واریانت اضافه کنید
               </div>
             ) : (
               <div className="space-y-4">
@@ -405,9 +393,22 @@ export default function ProductForm({ categories, initial }: Props) {
                   >
                     {/* هدر واریانت */}
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-coffee-700 fa-num">
-                        وزن {index + 1}
-                      </span>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-coffee-700">
+                          واریانت {(index + 1).toLocaleString('fa-IR')}
+                        </span>
+                        <span className="text-[10px] font-normal text-coffee-500 mr-2 fa-num">
+                          ({variant.weight_gram.toLocaleString('fa-IR')} گرم
+                          {variant.packaging_type !== 'standard' ||
+                          variant.packaging_label
+                            ? ` — ${getPackagingLabel(
+                                variant.packaging_type,
+                                variant.packaging_label
+                              )}`
+                            : ''}
+                          )
+                        </span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <label className="inline-flex items-center gap-1.5 cursor-pointer">
                           <input
@@ -436,8 +437,9 @@ export default function ProductForm({ categories, initial }: Props) {
                       </div>
                     </div>
 
-                    {/* فیلدهای عددی */}
+                    {/* فیلدهای واریانت */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                      {/* وزن */}
                       <div>
                         <label className="block text-[10px] text-coffee-500 mb-1">
                           وزن (گرم)
@@ -457,6 +459,21 @@ export default function ProductForm({ categories, initial }: Props) {
                         />
                       </div>
 
+                      {/* نوع بسته‌بندی */}
+                      <div>
+                        <label className="block text-[10px] text-coffee-500 mb-1">
+                          نوع بسته‌بندی
+                        </label>
+                        <VariantPackagingSelect
+                          value={variant.packaging_type}
+                          onChange={(v) =>
+                            updateVariant(index, { packaging_type: v })
+                          }
+                          disabled={isPending}
+                        />
+                      </div>
+
+                      {/* قیمت */}
                       <div>
                         <label className="block text-[10px] text-coffee-500 mb-1">
                           قیمت (تومان)
@@ -476,6 +493,7 @@ export default function ProductForm({ categories, initial }: Props) {
                         />
                       </div>
 
+                      {/* قیمت قبل از تخفیف */}
                       <div>
                         <label className="block text-[10px] text-coffee-500 mb-1">
                           قیمت قبل از تخفیف
@@ -498,7 +516,30 @@ export default function ProductForm({ categories, initial }: Props) {
                         />
                       </div>
 
-                      <div>
+                      {/* برچسب بسته‌بندی */}
+                      <div className="col-span-2">
+                        <label className="block text-[10px] text-coffee-500 mb-1">
+                          برچسب نمایشی بسته‌بندی (اختیاری)
+                        </label>
+                        <input
+                          type="text"
+                          value={variant.packaging_label}
+                          onChange={(e) =>
+                            updateVariant(index, {
+                              packaging_label: e.target.value,
+                            })
+                          }
+                          disabled={isPending}
+                          placeholder="مثال: با روبان قرمز"
+                          className="w-full px-2.5 py-2 rounded-lg border border-coffee-200 bg-white text-xs outline-none focus:border-gold-500"
+                        />
+                        <p className="text-[9px] text-coffee-400 mt-1">
+                          اگر پر شود، به‌جای برچسب پیش‌فرض نمایش داده می‌شود
+                        </p>
+                      </div>
+
+                      {/* SKU */}
+                      <div className="col-span-2">
                         <label className="block text-[10px] text-coffee-500 mb-1">
                           SKU
                         </label>
@@ -521,10 +562,7 @@ export default function ProductForm({ categories, initial }: Props) {
                     {/* تصویر واریانت */}
                     <div className="pt-3 border-t border-coffee-200">
                       <label className="block text-[10px] text-coffee-500 mb-2">
-                        تصویر این وزن (اختیاری)
-                        <span className="text-coffee-400 mr-1">
-                          — وقتی کاربر این وزن را انتخاب کند، تصویر بالای صفحه عوض می‌شود
-                        </span>
+                        تصویر این واریانت (اختیاری)
                       </label>
 
                       {variant.image_url ? (
@@ -622,7 +660,7 @@ export default function ProductForm({ categories, initial }: Props) {
                                 <path d="M12 3v12" />
                               </svg>
                               <span className="text-xs text-coffee-700 font-medium">
-                                آپلود تصویر برای این وزن
+                                آپلود تصویر برای این واریانت
                               </span>
                             </>
                           )}
@@ -650,9 +688,7 @@ export default function ProductForm({ categories, initial }: Props) {
             )}
           </Section>
 
-          {/* ==========================================
-              تصاویر گالری محصول
-              ========================================== */}
+          {/* تصاویر گالری */}
           <Section title="تصاویر گالری محصول">
             <ImageUploader
               images={images}
@@ -661,9 +697,7 @@ export default function ProductForm({ categories, initial }: Props) {
             />
           </Section>
 
-          {/* ==========================================
-              بچ تولید و تازگی
-              ========================================== */}
+          {/* بچ تولید و تازگی */}
           <Section title="بچ تولید و تازگی">
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -794,7 +828,6 @@ export default function ProductForm({ categories, initial }: Props) {
                   </button>
                 </div>
 
-                {/* حالت دستی */}
                 {batch.freshness_mode === 'MANUAL' && (
                   <div>
                     <label className="block text-sm font-medium text-coffee-800 mb-2">
@@ -826,7 +859,6 @@ export default function ProductForm({ categories, initial }: Props) {
                   </div>
                 )}
 
-                {/* حالت خودکار */}
                 {batch.freshness_mode === 'AUTO' && (
                   <div className="space-y-3">
                     <div>
@@ -879,7 +911,6 @@ export default function ProductForm({ categories, initial }: Props) {
                       </div>
                     </div>
 
-                    {/* پیش‌نمایش */}
                     {autoFreshnessPreview !== null && (
                       <div className="rounded-xl bg-gold-50 border border-gold-200 p-3 flex items-center justify-between gap-3">
                         <div>
@@ -887,16 +918,10 @@ export default function ProductForm({ categories, initial }: Props) {
                             امتیاز فعلی (محاسبه خودکار)
                           </div>
                           <div className="text-lg font-bold text-gold-700 fa-num">
-                            {autoFreshnessPreview.toLocaleString('fa-IR')}
-                            {' '}
-                            از ۱۰۰
+                            {autoFreshnessPreview.toLocaleString('fa-IR')} از
+                            ۱۰۰
                           </div>
                         </div>
-                        {batch.pack_date && (
-                          <div className="text-[10px] text-coffee-500 text-left">
-                            از تاریخ بسته‌بندی
-                          </div>
-                        )}
                       </div>
                     )}
 
@@ -909,7 +934,6 @@ export default function ProductForm({ categories, initial }: Props) {
                 )}
               </div>
 
-              {/* یادداشت کنترل کیفیت */}
               <div>
                 <label className="block text-sm font-medium text-coffee-800 mb-2">
                   یادداشت کنترل کیفیت
@@ -929,11 +953,8 @@ export default function ProductForm({ categories, initial }: Props) {
           </Section>
         </div>
 
-        {/* ==========================================
-            ستون کنار
-            ========================================== */}
+        {/* ستون کنار */}
         <div className="lg:col-span-1 space-y-5">
-          {/* وضعیت */}
           <Section title="وضعیت">
             <div className="space-y-3">
               <label className="flex items-start gap-2.5 cursor-pointer p-3 rounded-xl border border-coffee-200 hover:border-gold-400 transition-colors">
@@ -974,7 +995,6 @@ export default function ProductForm({ categories, initial }: Props) {
             </div>
           </Section>
 
-          {/* دسته‌بندی */}
           <Section title="دسته‌بندی">
             <select
               value={categoryId}
@@ -1003,7 +1023,6 @@ export default function ProductForm({ categories, initial }: Props) {
             )}
           </Section>
 
-          {/* SEO */}
           <Section title="بهینه‌سازی (SEO)">
             <div className="space-y-3">
               <FormField
@@ -1048,10 +1067,6 @@ export default function ProductForm({ categories, initial }: Props) {
     </form>
   );
 }
-
-// ==========================================
-// کامپوننت کمکی: بخش
-// ==========================================
 
 function Section({
   title,

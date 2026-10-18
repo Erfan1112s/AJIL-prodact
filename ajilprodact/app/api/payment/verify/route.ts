@@ -72,34 +72,86 @@ export async function GET(request: NextRequest) {
     authority,
   });
 
-  if (!verifyResult.ok) {
-    await execute(
-      `UPDATE orders SET status = 'CANCELLED' WHERE order_number = ?`,
-      [orderNumber]
+if (!verifyResult.ok) {
+  // آزاد کردن رزرو
+  const items = await queryRows<{
+    product_id: number;
+    weight_gram: number;
+    quantity: number;
+  }>(
+    `SELECT product_id, weight_gram, quantity FROM order_items WHERE order_id = ?`,
+    [order.id]
+  );
+
+  let targetBranchId = order.branch_id;
+  if (!targetBranchId) {
+    const branches = await queryRows<{ id: number }>(
+      `SELECT id FROM branches WHERE is_active = 1 ORDER BY id ASC LIMIT 1`
     );
-    return NextResponse.redirect(
-      `${baseUrl}/checkout/error?order=${orderNumber}&reason=verify_failed`
-    );
+    targetBranchId = branches[0]?.id;
   }
 
-  // پرداخت موفق
-  await execute(
-    `UPDATE orders
-     SET status = 'PAID',
-         payment_ref = ?,
-         payment_verified_at = CURRENT_TIMESTAMP
-     WHERE order_number = ?`,
-    [verifyResult.refId, orderNumber]
-  );
+  if (targetBranchId) {
+    for (const item of items) {
+      const weight = Number(item.weight_gram) * Number(item.quantity);
+      await execute(
+        `UPDATE product_branch_stock
+         SET reserved_weight_grams = GREATEST(0, reserved_weight_grams - ?)
+         WHERE branch_id = ? AND product_id = ?`,
+        [weight, targetBranchId, item.product_id]
+      );
+    }
+  }
 
-  // ارسال پیامک (اگر قالب تنظیم شده)
-  await sendOrderConfirmationSms({
-    mobile: order.customer_phone,
-    orderNumber: order.order_number,
-    amount: Number(order.total_amount),
-  });
+  await execute(
+    `UPDATE orders SET status = 'CANCELLED' WHERE order_number = ?`,
+    [orderNumber]
+  );
 
   return NextResponse.redirect(
-    `${baseUrl}/checkout/success?order=${orderNumber}`
+    `${baseUrl}/checkout/error?order=${orderNumber}&reason=verify_failed`
   );
+}
+
+// پرداخت موفق
+await execute(
+  `UPDATE orders
+   SET status = 'PAID',
+       payment_ref = ?,
+       payment_verified_at = CURRENT_TIMESTAMP
+   WHERE order_number = ?`,
+  [verifyResult.refId, orderNumber]
+);
+
+// مصرف رزرو از موجودی
+const items = await queryRows<{
+  product_id: number;
+  weight_gram: number;
+  quantity: number;
+}>(
+  `SELECT product_id, weight_gram, quantity FROM order_items WHERE order_id = ?`,
+  [order.id]
+);
+
+// تعیین شعبه
+let targetBranchId = order.branch_id;
+if (!targetBranchId) {
+  const branches = await queryRows<{ id: number }>(
+    `SELECT id FROM branches WHERE is_active = 1 ORDER BY id ASC LIMIT 1`
+  );
+  targetBranchId = branches[0]?.id;
+}
+
+if (targetBranchId) {
+  for (const item of items) {
+    const weight = Number(item.weight_gram) * Number(item.quantity);
+    await execute(
+      `UPDATE product_branch_stock
+       SET total_weight_grams = GREATEST(0, total_weight_grams - ?),
+           reserved_weight_grams = GREATEST(0, reserved_weight_grams - ?)
+       WHERE branch_id = ? AND product_id = ?`,
+      [weight, weight, targetBranchId, item.product_id]
+    );
+  }
+}
 }

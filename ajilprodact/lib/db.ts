@@ -2,7 +2,6 @@
 import mysql, { type Pool } from 'mysql2/promise';
 
 declare global {
-  // eslint-disable-next-line no-var
   var __mysqlPool: Pool | undefined;
 }
 
@@ -34,6 +33,25 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 /**
+ * Check if the error is a "table not found" error
+ */
+export function isMissingTableError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+
+  const maybeError = error as {
+    code?: string;
+    errno?: number;
+    sqlMessage?: string;
+  };
+
+  return (
+    maybeError.code === 'ER_NO_SUCH_TABLE' ||
+    maybeError.errno === 1146 ||
+    /doesn't exist/i.test(maybeError.sqlMessage ?? '')
+  );
+}
+
+/**
  * اجرای SELECT و برگرداندن ردیف‌ها با تایپ مشخص
  * از مشکل تایپ mysql2 که QueryResult می‌خواهد عبور می‌کند
  */
@@ -41,9 +59,8 @@ export async function queryRows<T>(
   sql: string,
   params?: unknown[]
 ): Promise<T[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [rows] = await db.query(sql, params as any);
-  return rows;
+  const [rows] = await db.query(sql, params as unknown[]);
+  return rows as T[];
 }
 
 /**
@@ -53,8 +70,7 @@ export async function execute(
   sql: string,
   params?: unknown[]
 ): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await db.query(sql, params as any);
+  await db.query(sql, params as unknown[]);
 }
 
 /**

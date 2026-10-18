@@ -5,7 +5,6 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import ProductHeartButton from '@/components/ProductHeartButton';
 import { LeafIcon } from '@/components/icons';
 import type { ProductListItem } from '@/lib/types';
 
@@ -23,7 +22,7 @@ export default function ProductCard({ product, priority = false }: Props) {
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="group relative block aspect-[3/4] rounded-3xl overflow-hidden shadow-lg shadow-coffee-900/10 hover:shadow-2xl hover:shadow-coffee-900/20 transition-all duration-500 hover:-translate-y-1"
+      className="group relative block aspect-[3/4] overflow-hidden rounded-[28px] border border-coffee-200/70 bg-white shadow-[0_18px_40px_rgba(52,38,26,0.08)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_26px_52px_rgba(52,38,26,0.14)]"
     >
       {/* ==========================================
           تصویر پس‌زمینه
@@ -34,70 +33,63 @@ export default function ProductCard({ product, priority = false }: Props) {
           alt={product.primary_image.alt ?? product.name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-700"
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
           priority={priority}
         />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-coffee-700 to-coffee-900" />
+        <div className="absolute inset-0 bg-gradient-to-br from-coffee-700 via-coffee-800 to-coffee-900" />
       )}
 
       {/* گرادیانت تیره برای خوانایی متن */}
       <div
-        className="absolute inset-0 bg-gradient-to-t from-coffee-900 via-coffee-900/55 to-coffee-900/15"
+        className="absolute inset-0 bg-gradient-to-t from-coffee-900/80 via-coffee-900/20 to-transparent"
         aria-hidden="true"
       />
 
       {/* ==========================================
           ردیف بالایی: نشان ویژه و قلب
           ========================================== */}
-      <div className="absolute top-3 right-3 left-3 flex items-start justify-between gap-2 z-10">
+      <div className="absolute inset-x-3 top-3 z-10">
         {product.is_featured === 1 ? (
-          <div className="px-2.5 py-1 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-coffee-900 text-[10px] font-bold shadow-lg shadow-gold-500/40">
+          <span className="rounded-full bg-gradient-to-r from-gold-300 via-gold-400 to-gold-500 px-2.5 py-1 text-[10px] font-black text-coffee-900 shadow-lg shadow-gold-500/30">
             ویژه
-          </div>
-        ) : (
-          <div />
-        )}
-
-        <ProductHeartButton productId={product.id} />
+          </span>
+        ) : null}
       </div>
 
       {/* ==========================================
           پیل قیمت
           ========================================== */}
-      <div className="absolute top-[calc(100%-11rem)] right-3 z-10">
-        <div className="inline-flex items-baseline gap-1.5 bg-white/95 backdrop-blur-md rounded-full px-3 py-1.5 shadow-lg border border-gold-200/50">
-          <span className="text-coffee-500 text-[10px] font-medium">از</span>
-          <span className="font-bold text-coffee-900 fa-num text-sm">
+      <div className="absolute right-3 top-14 z-10">
+        <div className="inline-flex items-baseline gap-1.5 rounded-full border border-gold-200/50 bg-white/90 px-3 py-1.5 shadow-md backdrop-blur-sm">
+          <span className="text-[10px] font-medium text-coffee-500">از</span>
+          <span className="fa-num text-sm font-black text-coffee-900">
             {formatPrice(product.min_price)}
           </span>
-          <span className="text-coffee-500 text-[10px]">تومان</span>
+          <span className="text-[10px] text-coffee-500">تومان</span>
         </div>
       </div>
 
       {/* ==========================================
           محتوای پایین
           ========================================== */}
-      <div className="absolute bottom-0 right-0 left-0 p-4">
+      <div className="absolute inset-x-0 bottom-0 z-10 p-4">
         {/* برچسب دسته */}
-        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold-500/20 backdrop-blur-sm border border-gold-400/30 text-gold-100 text-[10px] font-medium mb-2">
-          <LeafIcon className="w-3 h-3" />
+        <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-gold-300/50 bg-gold-400/10 px-2.5 py-1 text-[10px] font-medium text-gold-100 backdrop-blur-sm">
+          <LeafIcon className="h-3 w-3" />
           {product.category.name}
         </div>
 
         {/* نام محصول */}
-        <h3 className="text-base sm:text-lg font-bold text-cream-50 leading-snug mb-3 line-clamp-2 min-h-[2.6rem]">
+        <h3 className="mb-3 min-h-[2.6rem] text-base font-extrabold leading-snug text-cream-50 line-clamp-2 sm:text-lg">
           {product.name}
         </h3>
 
         {/* ردیف اطلاعات */}
-        <div className="flex items-center justify-between gap-2 text-cream-200/85 text-[11px]">
-          <span className="fa-num">
-            {product.variants.length.toLocaleString('fa-IR')} وزن
-          </span>
-
-          <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-gold-400" />
+        <div className="flex items-center justify-between gap-2 text-[11px] text-cream-200/90">
+          <span className="fa-num">{product.variants.length.toLocaleString('fa-IR')} وزن</span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-gold-400" />
             ارسال سریع
           </span>
         </div>

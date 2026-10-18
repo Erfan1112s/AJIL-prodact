@@ -37,22 +37,23 @@ export default async function HomePage() {
         />
 
         <Container className="relative py-16 sm:py-24">
-          <div className="max-w-3xl mx-auto text-center">
+          <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-gold-300 text-gold-700 text-xs font-medium mb-6 shadow-sm animate-fade-in">
               <LeafIcon className="w-3.5 h-3.5" />
-              تأمین مستقیم از باغات — تضمین تازگی
+              تأمین مستقیم از باغات — تضمین تازگی و کیفیت
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-coffee-900 mb-5 leading-tight animate-fade-up">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-coffee-900 mb-5 leading-[1.1] animate-fade-up">
               آجیل و خشکبار
-              <span className="text-gradient-gold"> داغ و تازه</span>
+              <span className="text-gradient-gold"> تازه و اصل </span>
               <br />
-              مستقیم از باغ به سفره شما
+              برای خرید روزمره و هدیه‌های خاص
             </h1>
 
-            <p className="text-coffee-600 text-base sm:text-lg leading-8 mb-8 max-w-xl mx-auto animate-fade-up">
-              با شناسنامه بچ و امتیاز تازگی، می‌دانید دقیقاً چه چیزی
-              می‌خرید. خرید آنلاین یا حضوری از شعبه — هر جا که راحت‌ترید.
+            <p className="text-coffee-600 text-base sm:text-lg leading-8 mb-8 max-w-2xl mx-auto animate-fade-up">
+              از پسته و بادام تا خرما و خشکبار، محصولات ما با شناسنامه بچ،
+              قیمت مناسب و ارسال سریع به دست شما می‌رسد؛ هم برای خرید آنلاین
+              و هم خرید حضوری از شعبه‌های منتخب.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3 animate-fade-up">
@@ -60,7 +61,7 @@ export default async function HomePage() {
                 href="/products"
                 className="group inline-flex items-center gap-2 btn-gold shimmer-line px-7 py-3.5 rounded-xl"
               >
-                مشاهده محصولات
+                سفارش امروز
                 <ArrowLeftIcon className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               </Link>
 
@@ -68,14 +69,14 @@ export default async function HomePage() {
                 href="/categories"
                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-white border border-coffee-200 text-coffee-800 font-medium hover:border-gold-500 hover:text-gold-700 transition-colors"
               >
-                دسته‌بندی‌ها
+                مشاهده دسته‌بندی‌ها
               </Link>
             </div>
 
             <div className="grid grid-cols-3 gap-4 mt-14 max-w-lg mx-auto animate-fade-in">
               <HeroStat
                 icon={<ShieldIcon className="w-5 h-5" />}
-                label="تضمین کیفیت"
+                label="کیفیت تضمین‌شده"
               />
               <HeroStat
                 icon={<TruckIcon className="w-5 h-5" />}
@@ -95,7 +96,7 @@ export default async function HomePage() {
         <Container>
           <SectionHeader
             title="خرید بر اساس دسته"
-            desc="محصولات خود را از دسته‌بندی‌های متنوع انتخاب کنید"
+            desc="محصولات را بر اساس نیاز و سلیقه خود انتخاب کنید"
             href="/categories"
           />
 
@@ -114,7 +115,7 @@ export default async function HomePage() {
                 </h3>
                 <p className="text-xs text-coffee-500 fa-num">
                   {cat.children.length > 0
-                    ? `${cat.children.length.toLocaleString('fa-IR')} زیردسته`
+                    ? `${cat.children.length.toLocaleString('fa-IR')} دسته فرعی`
                     : 'مشاهده محصولات'}
                 </p>
                 <ArrowLeftIcon className="absolute top-5 left-5 w-4 h-4 text-coffee-300 group-hover:text-gold-600 group-hover:-translate-x-1 transition-all" />
@@ -129,7 +130,7 @@ export default async function HomePage() {
         <Container>
           <SectionHeader
             title="محصولات منتخب"
-            desc="انتخاب‌شده توسط مشتریان وفادار"
+            desc="برترین انتخاب‌ها برای تجربه خرید آرام و مطمئن"
             href="/products"
             linkText="همه محصولات"
           />
@@ -162,14 +163,15 @@ export default async function HomePage() {
             />
             <div className="relative max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/20 border border-gold-500/40 text-gold-200 text-xs mb-4">
-                به‌زودی
+                شناسنامه دیجیتال
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-cream-50">
-                شناسنامه دیجیتال روی هر بسته
+                هر بسته، با تاریخ و کیفیت کامل
               </h2>
               <p className="text-cream-200/85 leading-7">
-                روی هر بسته NFC تعبیه می‌شود. با یک لمس، تاریخ برداشت،
-                برشته‌کاری، بچ تولید و امتیاز تازگی را ببینید.
+                با تکنولوژی NFC، تاریخ برداشت، برشته‌کاری، بچ تولید و امتیاز
+                تازگی هر محصول به‌صورت دقیق روی بسته آمده و برای شما قابل
+                بررسی است.
               </p>
             </div>
           </div>
@@ -213,13 +215,11 @@ function SectionHeader({
         <h2 className="text-xl sm:text-2xl font-bold text-coffee-900">
           {title}
         </h2>
-        {desc && (
-          <p className="text-sm text-coffee-500 mt-1.5">{desc}</p>
-        )}
+        {desc && <p className="text-sm text-coffee-500 mt-1.5">{desc}</p>}
       </div>
       <Link
         href={href}
-        className="group hidden sm:inline-flex items-center gap-1 text-sm text-gold-700 font-medium hover:text-gold-800 shrink-0"
+        className="group inline-flex items-center gap-2 text-sm text-coffee-700 hover:text-gold-700 transition-colors"
       >
         {linkText}
         <ArrowLeftIcon className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />

@@ -1,6 +1,5 @@
 // lib/queries/products.ts
 // توابع خواندن محصولات با واریانت‌ها و تصاویر
-// طراحی شده برای جلوگیری از N+1 query
 
 import { queryRows } from '@/lib/db';
 import type {
@@ -15,7 +14,6 @@ import type {
 
 // ==========================================
 // تابع داخلی: چسباندن واریانت‌ها و تصاویر به محصولات
-// این تابع از N+1 جلوگیری می‌کند
 // ==========================================
 async function attachVariantsAndImages(
   products: ProductRow[]
@@ -26,18 +24,16 @@ async function attachVariantsAndImages(
   const placeholders = productIds.map(() => '?').join(',');
 
   const [variants, images, categories] = await Promise.all([
-    // کوئری 1: همه واریانت‌های این محصولات
-    // توجه: ستون image_url هم خوانده می‌شود
     queryRows<ProductVariantRow>(
-      `SELECT id, product_id, weight_gram, price, compare_price,
-              sku, image_url, is_active, created_at, updated_at
+      `SELECT id, product_id, weight_gram, packaging_type, packaging_label,
+              price, compare_price, sku, image_url, is_active,
+              created_at, updated_at
        FROM product_variants
        WHERE product_id IN (${placeholders}) AND is_active = 1
-       ORDER BY weight_gram ASC`,
+       ORDER BY weight_gram ASC, packaging_type ASC`,
       productIds
     ),
 
-    // کوئری 2: تصاویر محصولات
     queryRows<ProductImageRow>(
       `SELECT id, product_id, url, alt, sort_order, is_primary, created_at
        FROM product_images
@@ -46,7 +42,6 @@ async function attachVariantsAndImages(
       productIds
     ),
 
-    // کوئری 3: اطلاعات دسته
     queryRows<CategorySummary>(
       `SELECT DISTINCT c.id, c.name, c.slug
        FROM categories c
@@ -56,7 +51,6 @@ async function attachVariantsAndImages(
     ),
   ]);
 
-  // گروه‌بندی واریانت‌ها بر اساس product_id
   const variantsByProduct = new Map<number, ProductVariantRow[]>();
   for (const v of variants) {
     const list = variantsByProduct.get(v.product_id) ?? [];
@@ -64,7 +58,6 @@ async function attachVariantsAndImages(
     variantsByProduct.set(v.product_id, list);
   }
 
-  // گروه‌بندی تصاویر - فقط اولین (اصلی) هر محصول
   const primaryImageByProduct = new Map<number, ProductImageRow>();
   for (const img of images) {
     if (!primaryImageByProduct.has(img.product_id)) {
@@ -72,7 +65,6 @@ async function attachVariantsAndImages(
     }
   }
 
-  // نگاشت دسته‌ها
   const categoryById = new Map<number, CategorySummary>();
   for (const c of categories) {
     categoryById.set(c.id, c);
@@ -180,13 +172,12 @@ export async function getProductsByCategory(
 }
 
 // ==========================================
-// تابع 4: محصول با slug (برای صفحه تک محصول)
+// تابع 4: محصول با slug
 // ==========================================
 
 export async function getProductBySlug(
   slug: string
 ): Promise<ProductDetail | null> {
-  // کوئری اول: اطلاعات پایه + دسته
   const products = await queryRows<
     ProductRow & { category_name: string; category_slug: string }
   >(
@@ -206,15 +197,14 @@ export async function getProductBySlug(
   const product = products[0];
   if (!product) return null;
 
-  // کوئری‌های موازی: واریانت‌ها، تصاویر، آخرین بچ
   const [variants, images, batches] = await Promise.all([
-    // توجه: ستون image_url هم اینجا خوانده می‌شود
     queryRows<ProductVariantRow>(
-      `SELECT id, product_id, weight_gram, price, compare_price,
-              sku, image_url, is_active, created_at, updated_at
+      `SELECT id, product_id, weight_gram, packaging_type, packaging_label,
+              price, compare_price, sku, image_url, is_active,
+              created_at, updated_at
        FROM product_variants
        WHERE product_id = ? AND is_active = 1
-       ORDER BY weight_gram ASC`,
+       ORDER BY weight_gram ASC, packaging_type ASC`,
       [product.id]
     ),
 

@@ -41,11 +41,11 @@ export interface CheckoutFormData {
 
 export type SubmitOrderResult =
   | {
-      ok: true;
-      orderNumber: string;
-      paymentUrl: string;
-      isMock: boolean;
-    }
+    ok: true;
+    orderNumber: string;
+    paymentUrl: string;
+    isMock: boolean;
+  }
   | { ok: false; error: string; code?: string };
 
 // ==========================================
@@ -95,7 +95,6 @@ function validateInput(input: CheckoutFormData): string | null {
 export async function submitOrderAction(
   input: CheckoutFormData
 ): Promise<SubmitOrderResult> {
-  // ۱. بررسی لاگین
   const customerId = await getCurrentCustomerId();
   if (!customerId) {
     return {
@@ -105,13 +104,11 @@ export async function submitOrderAction(
     };
   }
 
-  // ۲. اعتبارسنجی ورودی
   const validationError = validateInput(input);
   if (validationError) {
     return { ok: false, error: validationError, code: 'INVALID_INPUT' };
   }
 
-  // ۳. خواندن مشتری
   const customers = await queryRows<CustomerRow>(
     `SELECT id, phone, full_name FROM customers WHERE id = ? AND is_active = 1 LIMIT 1`,
     [customerId]
@@ -126,8 +123,7 @@ export async function submitOrderAction(
     };
   }
 
-  // ۴. خواندن واریانت‌ها
-  const variantIds = input.items.map((i) => i.variantId);
+  const variantIds = input.items.map((item) => item.variantId);
   const placeholders = variantIds.map(() => '?').join(',');
 
   const variants = await queryRows<
@@ -166,7 +162,6 @@ export async function submitOrderAction(
     }
   }
 
-  // ۵. محاسبه جمع کالاها با قیمت‌های واقعی
   interface OrderItemDraft {
     variantId: number;
     productId: number;
@@ -181,7 +176,7 @@ export async function submitOrderAction(
   let totalWeight = 0;
 
   for (const item of input.items) {
-    const variant = variants.find((v) => v.id === item.variantId);
+    const variant = variants.find((entry) => entry.id === item.variantId);
     if (!variant) continue;
 
     const quantity = Math.min(Math.max(1, item.quantity), 10);
@@ -204,49 +199,46 @@ export async function submitOrderAction(
     return { ok: false, error: 'سبد خرید خالی است', code: 'EMPTY_CART' };
   }
 
-  // ۶. محاسبه هزینه ارسال
   let shippingCost = 0;
-  let shippingProvider: ShippingProvider = 'NONE';
+  let shippingProvider: ShippingProvider =
+    input.deliveryMethod === 'SHIPPING' ? input.shippingProvider : 'NONE';
 
   if (input.deliveryMethod === 'SHIPPING') {
-    const shippingResult = calculateShippingOptions({
+    const shippingCalculation = calculateShippingOptions({
       province: input.province,
       city: input.city,
       totalWeightGram: totalWeight,
       subtotal,
     });
 
-    if (!shippingResult.canShip) {
+    if (!shippingCalculation.canShip) {
       return {
         ok: false,
-        error:
-          shippingResult.message ?? 'ارسال به این منطقه امکان‌پذیر نیست',
+        error: shippingCalculation.message ?? 'امکان ارسال وجود ندارد',
         code: 'SHIPPING_UNAVAILABLE',
       };
     }
 
-    const selectedOption = shippingResult.options.find(
-      (opt) => opt.provider === input.shippingProvider
-    );
+    const selectedShippingOption =
+      shippingCalculation.options.find(
+        (option) => option.provider === input.shippingProvider
+      ) ?? shippingCalculation.options[0];
 
-    if (!selectedOption) {
+    if (!selectedShippingOption) {
       return {
         ok: false,
-        error: 'روش ارسال انتخابی در دسترس نیست',
-        code: 'SHIPPING_UNAVAILABLE',
+        error: 'روش ارسال نامعتبر است',
+        code: 'INVALID_SHIPPING_PROVIDER',
       };
     }
 
-    shippingCost = selectedOption.cost;
-    shippingProvider = selectedOption.provider;
+    shippingCost = selectedShippingOption.cost;
+    shippingProvider = selectedShippingOption.provider;
   }
 
   const totalAmount = subtotal + shippingCost;
-
-  // ۷. تولید شماره سفارش
   const orderNumber = generateOrderNumber();
 
-  // ۸. ذخیره سفارش (تراکنش)
   try {
     await transaction(async (conn) => {
       const [orderResult] = await conn.query(
@@ -256,7 +248,7 @@ export async function submitOrderAction(
           subtotal, shipping_cost, total_amount,
           status, delivery_method, shipping_provider,
           branch_id, note
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?, ? )`,
         [
           orderNumber,
           customerId,
@@ -277,8 +269,7 @@ export async function submitOrderAction(
         ]
       );
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const orderId = (orderResult as any).insertId as number;
+      const orderId = (orderResult as { insertId: number }).insertId;
 
       for (const item of orderItems) {
         await conn.query(
@@ -298,8 +289,8 @@ export async function submitOrderAction(
         );
       }
     });
-  } catch (err) {
-    console.error('خطا در ثبت سفارش:', err);
+  } catch (error) {
+    console.error('خطا در ثبت سفارش:', error);
     return {
       ok: false,
       error: 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.',
@@ -307,7 +298,6 @@ export async function submitOrderAction(
     };
   }
 
-  // ۹. درخواست پرداخت
   const callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/payment/verify?order=${orderNumber}`;
 
   const paymentResult = await requestPayment({
@@ -332,17 +322,12 @@ export async function submitOrderAction(
     };
   }
 
-  // ۱۰. ذخیره authority
   await execute(
     `UPDATE orders
      SET payment_method = ?,
          payment_authority = ?
      WHERE order_number = ?`,
-    [
-      isMockMode() ? 'zarinpal-mock' : 'zarinpal',
-      paymentResult.authority,
-      orderNumber,
-    ]
+    [isMockMode() ? 'zarinpal-mock' : 'zarinpal', paymentResult.authority, orderNumber]
   );
 
   return {

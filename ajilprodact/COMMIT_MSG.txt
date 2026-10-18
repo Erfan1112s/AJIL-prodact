@@ -323,3 +323,46 @@ feat: پنل ادمین کامل + آپلود تصویر + تازگی هوشمن
 - محاسبه تازگی دستی و خودکار با کاهش سالانه
 - ویرایش لحظه‌ای قیمت با QuickPriceEdit
 - رفع باگ تغییر نکردن تصویر با انتخاب وزن
+
+refactor: تبدیل معماری موجودی به وزن‌محور + تکمیل پنل ادمین
+
+تغییرات معماری دیتابیس:
+- حذف جدول branch_inventory (موجودی بر اساس واریانت)
+- ایجاد جدول product_branch_stock (موجودی بر اساس وزن کل محصول در هر شعبه)
+- افزودن ستون‌های packaging_type و packaging_label به product_variants
+- افزودن ستون‌های packaging_type و packaging_label به order_items
+- به‌روزرسانی schema.sql و seed.sql برای ساختار جدید
+- افزودن migration 004-weight-based-stock.sql
+
+منطق موجودی وزن‌محور:
+- هر محصول در هر شعبه دارای total_weight_grams و reserved_weight_grams است
+- با خرید هر بسته، وزن آن (تعداد × وزن واحد) از موجودی کل کم می‌شود
+- محاسبه تعداد بسته‌های قابل فروش به صورت داینامیک (available_grams / weight_gram)
+- بازنویسی lib/queries/branches.ts و branches-admin.ts
+- به‌روزرسانی منطق رزرو و آزادسازی در checkout و payment/verify
+
+بسته‌بندی چندگانه (Packaging):
+- امکان تعریف چند بسته‌بندی مختلف برای یک وزن
+- افزودن کامپوننت VariantPackagingSelect
+- به‌روزرسانی ProductForm برای آپلود تصویر و برچسب برای هر بسته‌بندی
+- نمایش بسته‌بندی در ProductVariantSelector فروشگاه
+- ذخیره بسته‌بندی در cart و order_items
+
+پنل ادمین:
+- اتصال کامل تمام لینک‌های سایدبار (رفع 404)
+- ایجاد صفحه مدیریت مشتریان (/admin/customers) با فیلتر و جزئیات
+- ایجاد صفحه کدهای تخفیف (/admin/discounts) - به‌زودی
+- ایجاد صفحه تنظیمات (/admin/settings) - به‌زودی
+- بازنویسی InventoryTable برای نمایش و ویرایش وزن کل محصولات
+- به‌روزرسانی BranchesList با آمار وزنی
+- به‌روزرسانی داشبورد با لینک به مشتریان
+
+رفع باگ‌ها:
+- رفع خطای Invalid time value در formatDate (بررسی معتبر بودن تاریخ)
+- رفع مشکل نمایش تصویر محصول با تغییر وزن
+- ایمن‌سازی توابع تاریخ در برابر مقادیر نامعتبر دیتابیس
+
+تغییرات جزئی:
+- به‌روزرسانی تایپ‌ها در lib/types.ts (ProductBranchStockRow, VariantBranchStock)
+- افزودن توابع formatWeight و calculateTotalWeight به lib/utils.ts
+- بهبود UX فرم‌های ادمین با پیش‌نمایش وزن

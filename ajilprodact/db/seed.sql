@@ -1,13 +1,12 @@
 -- db/seed.sql
 -- داده اولیه پروژه کاتالوگ آجیل و خشکبار
--- این نسخه با DELETE نوشته شده تا روی هاست cPanel بدون مشکل کار کند
+-- این نسخه با اسکیمای جدید (delivery_method, subtotal, ...) هماهنگ است
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ==========================================
 -- پاک‌سازی جدول‌ها
--- ترتیب: فرزندان قبل از والدین
 -- ==========================================
 DELETE FROM order_items;
 DELETE FROM orders;
@@ -96,30 +95,31 @@ VALUES
 
 
 -- ==========================================
--- واریانت‌ها (وزن و قیمت)
+-- واریانت‌ها (وزن و قیمت + image_url)
 -- ==========================================
-INSERT INTO product_variants (product_id, weight_gram, price, compare_price, sku) VALUES
+INSERT INTO product_variants
+  (product_id, weight_gram, packaging_type, packaging_label, price, compare_price, sku, image_url, is_active) VALUES
   -- پسته اکبری
-  (1, 250,  450000, NULL,   'PST-AKB-250'),
-  (1, 500,  880000, 950000, 'PST-AKB-500'),
-  (1, 1000, 1720000, NULL,  'PST-AKB-1000'),
+  (1, 250, 'standard', NULL, 450000, NULL, 'PST-AKB-250', NULL, 1),
+  (1, 500, 'standard', NULL, 880000, 950000, 'PST-AKB-500', NULL, 1),
+  (1, 1000, 'standard', NULL, 1720000, NULL, 'PST-AKB-1000', NULL, 1),
 
   -- بادام درختی
-  (2, 250,  280000, NULL, 'BDM-DRK-250'),
-  (2, 500,  550000, NULL, 'BDM-DRK-500'),
-  (2, 1000, 1080000, NULL, 'BDM-DRK-1000'),
+  (2, 250, 'standard', NULL, 280000, NULL, 'BDM-DRK-250', NULL, 1),
+  (2, 500, 'standard', NULL, 550000, NULL, 'BDM-DRK-500', NULL, 1),
+  (2, 1000, 'standard', NULL, 1080000, NULL, 'BDM-DRK-1000', NULL, 1),
 
   -- فندق
-  (3, 250,  320000, NULL, 'FND-PST-250'),
-  (3, 500,  630000, NULL, 'FND-PST-500'),
+  (3, 250, 'standard', NULL, 320000, NULL, 'FND-PST-250', NULL, 1),
+  (3, 500, 'standard', NULL, 630000, NULL, 'FND-PST-500', NULL, 1),
 
   -- بادام هندی
-  (4, 250,  520000, NULL, 'BDH-SHR-250'),
-  (4, 500,  1020000, NULL, 'BDH-SHR-500'),
+  (4, 250, 'standard', NULL, 520000, NULL, 'BDH-SHR-250', NULL, 1),
+  (4, 500, 'standard', NULL, 1020000, NULL, 'BDH-SHR-500', NULL, 1),
 
   -- تخمه
-  (5, 250,  120000, NULL, 'TKH-AFT-250'),
-  (5, 500,  230000, NULL, 'TKH-AFT-500');
+  (5, 250, 'standard', NULL, 120000, NULL, 'TKH-AFT-250', NULL, 1),
+  (5, 500, 'standard', NULL, 230000, NULL, 'TKH-AFT-500', NULL, 1);
 
 
 -- ==========================================
@@ -134,39 +134,37 @@ INSERT INTO product_images (product_id, url, alt, sort_order, is_primary) VALUES
 
 
 -- ==========================================
--- بچ‌های تولید
+-- بچ‌های تولید با ستون‌های تازگی
 -- ==========================================
 INSERT INTO batches
-  (batch_code, product_id, supplier_name, harvest_date, roast_date, pack_date, expiry_date, freshness_score, qc_note)
+  (batch_code, product_id, supplier_name, harvest_date, roast_date, pack_date, expiry_date,
+   freshness_mode, freshness_score, freshness_base_score, freshness_base_date,
+   freshness_annual_decay, qc_note)
 VALUES
-  ('P-250901', 1, 'باغات رفسنجان',  '2025-08-20', '2025-09-01', '2025-09-05', '2026-03-05', 95,
-   'کیفیت مطلوب، اندازه یکنواخت'),
-  ('P-250910', 2, 'باغات سامان',    '2025-08-25', NULL,         '2025-09-10', '2026-03-10', 92,
-   'بادام سالم بدون آفت'),
-  ('P-250915', 3, 'باغات اشکورات',  '2025-09-01', NULL,         '2025-09-15', '2026-03-15', 90,
-   'فندق با مغز پر و تازه'),
-  ('P-250918', 4, 'واردات هند',     NULL,         '2025-09-18', '2025-09-18', '2026-03-18', 88,
-   'بادام هندی درجه A'),
-  ('P-250920', 5, 'کشت داخلی',      '2025-09-10', '2025-09-20', '2025-09-20', '2026-03-20', 93,
-   'تخمه درشت و یکنواخت');
+  ('P-250901', 1, 'باغات رفسنجان', '2025-08-20', '2025-09-01', '2025-09-05', '2026-03-05',
+   'MANUAL', 95, 95, '2025-09-05', 50, 'کیفیت مطلوب، اندازه یکنواخت'),
+  ('P-250910', 2, 'باغات سامان',   '2025-08-25', NULL,         '2025-09-10', '2026-03-10',
+   'MANUAL', 92, 92, '2025-09-10', 50, 'بادام سالم بدون آفت'),
+  ('P-250915', 3, 'باغات اشکورات', '2025-09-01', NULL,         '2025-09-15', '2026-03-15',
+   'MANUAL', 90, 90, '2025-09-15', 50, 'فندق با مغز پر و تازه'),
+  ('P-250918', 4, 'واردات هند',    NULL,         '2025-09-18', '2025-09-18', '2026-03-18',
+   'MANUAL', 88, 88, '2025-09-18', 50, 'بادام هندی درجه A'),
+  ('P-250920', 5, 'کشت داخلی',     '2025-09-10', '2025-09-20', '2025-09-20', '2026-03-20',
+   'MANUAL', 93, 93, '2025-09-20', 50, 'تخمه درشت و یکنواخت');
 
 
 -- ==========================================
--- موجودی شعبه مرکزی
+-- موجودی شعبه بر اساس وزن محصول
 -- ==========================================
-INSERT INTO branch_inventory (branch_id, variant_id, stock) VALUES
-  (1, 1, 45),
-  (1, 2, 30),
-  (1, 3, 15),
-  (1, 4, 50),
-  (1, 5, 35),
-  (1, 6, 20),
-  (1, 7, 25),
-  (1, 8, 18),
-  (1, 9, 40),
-  (1, 10, 22),
-  (1, 11, 60),
-  (1, 12, 55);
+-- محاسبه‌شده از داده قبلی: هر محصول با مجموع وزن
+INSERT INTO product_branch_stock
+  (branch_id, product_id, total_weight_grams, reserved_weight_grams)
+VALUES
+  (1, 1, 75000, 0),   -- پسته اکبری: 75 کیلو
+  (1, 2, 55000, 0),   -- بادام درختی: 55 کیلو
+  (1, 3, 25000, 0),   -- فندق: 25 کیلو
+  (1, 4, 45000, 0),   -- بادام هندی: 45 کیلو
+  (1, 5, 50000, 0);   -- تخمه: 50 کیلو
 
 
 -- ==========================================
@@ -175,22 +173,39 @@ INSERT INTO branch_inventory (branch_id, variant_id, stock) VALUES
 INSERT INTO customers
   (id, phone, full_name, email, default_address, order_count, last_order_at)
 VALUES
-  (1, '09121234567', 'علی رضایی',  'ali@example.com',    'تهران، سعادت‌آباد، کوچه 5',  3, '2025-09-20 10:30:00'),
-  (2, '09351112233', 'مریم احمدی', 'maryam@example.com', 'تهران، ونک، خیابان گاندی',   1, '2025-09-18 15:45:00'),
+  (1, '09121234567', 'علی رضایی',  'ali@example.com',    'اصفهان، سعادت‌آباد، کوچه 5', 3, '2025-09-20 10:30:00'),
+  (2, '09351112233', 'مریم احمدی', 'maryam@example.com', 'اصفهان، ونک، خیابان گاندی',   1, '2025-09-18 15:45:00'),
   (3, '09197778899', 'حسن کریمی',  NULL,                 'کرج، عظیمیه، بلوار اصلی',    5, '2025-09-22 09:00:00'),
   (4, '09361234567', 'زهرا موسوی', NULL,                 NULL,                          0, NULL);
 
 
 -- ==========================================
--- سفارشات نمونه
+-- سفارشات نمونه (با ستون‌های جدید)
 -- ==========================================
 INSERT INTO orders
-  (order_number, customer_id, customer_name, customer_phone, total_amount,
-   status, order_type, branch_id, created_at)
+  (order_number, customer_id, customer_name, customer_phone,
+   province, city, address, postal_code,
+   subtotal, shipping_cost, total_amount,
+   status, delivery_method, shipping_provider,
+   payment_method, payment_ref, branch_id, created_at)
 VALUES
-  ('ORD-1404001', 1, 'علی رضایی',  '09121234567', 880000,  'DELIVERED', 'ONLINE',   NULL, '2025-09-20 10:30:00'),
-  ('ORD-1404002', 2, 'مریم احمدی', '09351112233', 450000,  'PAID',      'ONLINE',   NULL, '2025-09-18 15:45:00'),
-  ('ORD-1404003', 3, 'حسن کریمی',  '09197778899', 1720000, 'SHIPPED',   'IN_STORE', 1,    '2025-09-22 09:00:00');
+  ('ORD-1404001', 1, 'علی رضایی', '09121234567',
+   'اصفهان', 'اصفهان', 'خیابان چهارباغ بالا، پلاک 45، واحد 3', '8173954876',
+   880000, 0, 880000,
+   'DELIVERED', 'SHIPPING', 'POST',
+   'zarinpal', '123456789', NULL, '2025-09-20 10:30:00'),
+
+  ('ORD-1404002', 2, 'مریم احمدی', '09351112233',
+   'اصفهان', 'اصفهان', 'خیابان توحید، پلاک 12', '8173964877',
+   450000, 45000, 495000,
+   'PAID', 'SHIPPING', 'SNAPP',
+   'zarinpal', '987654321', NULL, '2025-09-18 15:45:00'),
+
+  ('ORD-1404003', 3, 'حسن کریمی', '09197778899',
+   NULL, NULL, NULL, NULL,
+   1720000, 0, 1720000,
+   'SHIPPED', 'PICKUP', 'NONE',
+   NULL, NULL, 1, '2025-09-22 09:00:00');
 
 
 -- ==========================================
@@ -199,21 +214,17 @@ VALUES
 INSERT INTO order_items
   (order_id, product_id, variant_id, product_name, weight_gram, price, quantity)
 VALUES
-  (1, 1, 2, 'پسته اکبری ممتاز',   500,  880000,  1),
-  (2, 1, 1, 'پسته اکبری ممتاز',   250,  450000,  1),
-  (3, 1, 3, 'پسته اکبری ممتاز',   1000, 1720000, 1);
+  (1, 1, 2, 'پسته اکبری ممتاز', 500,  880000,  1),
+  (2, 1, 1, 'پسته اکبری ممتاز', 250,  450000,  1),
+  (3, 1, 3, 'پسته اکبری ممتاز', 1000, 1720000, 1);
 
 
 -- ==========================================
 -- کاربر ادمین
 -- توجه: این هش با هیچ رمزی مطابقت ندارد
--- بعد از ایمپورت، این کوئری را اجرا کن:
---   UPDATE admin_users
---   SET password_hash = 'هش-واقعی-خودت'
---   WHERE username = 'admin';
---
--- برای ساخت هش، روی سیستم لوکال اجرا کن:
---   node scripts/generate-admin-hash.mjs 'رمز-قوی-خودت'
+-- بعد از ایمپورت، با دستور زیر هش جدید بساز:
+--   node scripts/generate-admin-hash.mjs 'رمز-دلخواه'
+-- و در دیتابیس جایگزین کن
 -- ==========================================
 INSERT INTO admin_users (username, password_hash, full_name, role) VALUES
-  ('admin', 'fbd7798974ae03f3b3af95d9f9261344:9cf95aeca92f030fe8d222436441f728d1de47c1f0b92e10b3dfde53b72bc3f9b82abb44476be4cd64a2c78eac7600bdca5149cf08e12f6b855ad0a4b8b86753', 'مدیر سیستم', 'SUPER_ADMIN');
+  ('admin', 'PLACEHOLDER_REPLACE_WITH_REAL_HASH', 'مدیر سیستم', 'SUPER_ADMIN');
