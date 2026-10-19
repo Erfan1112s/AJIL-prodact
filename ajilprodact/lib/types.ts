@@ -111,23 +111,6 @@ export interface ProductBranchStockRow {
   updated_at: Date;
 }
 
-// موجودی یک واریانت در یک شعبه (تایپ ترکیبی)
-export interface VariantBranchStock {
-  branch_id: number;
-  branch_name: string;
-  branch_slug: string;
-  branch_address: string | null;
-  branch_phone: string | null;
-  total_grams: number;
-  reserved_grams: number;
-  available_grams: number;
-  available_units: number;
-  // legacy aliases used by product page and older code
-  stock: number;
-  reserved: number;
-  available: number;
-}
-
 // ردیف جدول customers
 export interface CustomerRow {
   id: number;
@@ -200,13 +183,59 @@ export interface OrderItemRow {
   variant_id: number;
   product_name: string;
   weight_gram: number;
+  packaging_type: string;
+  packaging_label: string | null;
   price: number;
   quantity: number;
   created_at: Date;
 }
 
 // ==========================================
-// بخش 2: تایپ‌های ترکیبی
+// بخش 2: تایپ‌های نظرات (جدید)
+// ==========================================
+
+// نوع رسانه در نظرات
+export type ReviewMediaType = 'IMAGE' | 'VIDEO';
+
+// ردیف جدول product_reviews
+export interface ProductReviewRow {
+  id: number;
+  product_id: number;
+  customer_id: number;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  is_verified_purchase: number;
+  is_approved: number;
+  approved_at: Date | null;
+  admin_reply: string | null;
+  admin_reply_at: Date | null;
+  helpful_count: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// ردیف جدول review_media
+export interface ReviewMediaRow {
+  id: number;
+  review_id: number;
+  media_type: ReviewMediaType;
+  url: string;
+  thumbnail_url: string | null;
+  sort_order: number;
+  created_at: Date;
+}
+
+// ردیف جدول review_votes
+export interface ReviewVoteRow {
+  id: number;
+  review_id: number;
+  customer_id: number;
+  created_at: Date;
+}
+
+// ==========================================
+// بخش 3: تایپ‌های ترکیبی
 // ==========================================
 
 // دسته‌بندی با فرزندانش
@@ -247,4 +276,92 @@ export interface ProductDetail {
   variants: ProductVariantRow[];
   images: ProductImageRow[];
   latest_batch: BatchRow | null;
+}
+
+// موجودی یک واریانت در یک شعبه
+export interface VariantBranchStock {
+  branch_id: number;
+  branch_name: string;
+  branch_slug: string;
+  branch_address: string | null;
+  branch_phone: string | null;
+  total_grams: number;
+  reserved_grams: number;
+  available_grams: number;
+  available_units: number;
+}
+
+// ==========================================
+// بخش 4: تایپ‌های ترکیبی نظرات (جدید)
+// ==========================================
+
+// اطلاعات مشتری که نظر داده (برای نمایش در کارت نظر)
+export interface ReviewAuthor {
+  id: number;
+  full_name: string | null;
+  // حرف اول نام برای avatar
+  initial: string;
+}
+
+// نظر کامل با همه اطلاعات برای نمایش در سایت
+// شامل: اطلاعات نظر + نویسنده + رسانه‌ها + آیا کاربر فعلی رای داده
+export interface ProductReviewWithDetails {
+  // اطلاعات نظر
+  id: number;
+  product_id: number;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  is_verified_purchase: boolean;
+  admin_reply: string | null;
+  admin_reply_at: Date | null;
+  helpful_count: number;
+  created_at: Date;
+
+  // اطلاعات نویسنده
+  author: ReviewAuthor;
+
+  // رسانه‌ها
+  media: ReviewMediaRow[];
+
+  // آیا کاربر فعلی به این نظر رای داده؟
+  has_voted: boolean;
+}
+
+// آمار نظرات یک محصول
+export interface ProductReviewStats {
+  total_count: number;
+  average_rating: number; // 0 اگر هیچ نظری نیست
+  // تعداد نظرات به تفکیک امتیاز (index 0 = 1 ستاره، index 4 = 5 ستاره)
+  rating_distribution: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+    5: number;
+  };
+  // تعداد نظرات با عکس یا ویدیو
+  with_media_count: number;
+  // تعداد نظرات خریداران تاییدشده
+  verified_count: number;
+}
+
+// نظر در پنل ادمین (با اطلاعات بیشتر)
+export interface AdminReviewListItem {
+  id: number;
+  product_id: number;
+  product_name: string;
+  product_slug: string;
+  customer_id: number;
+  customer_name: string | null;
+  customer_phone: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  is_verified_purchase: boolean;
+  is_approved: boolean;
+  has_admin_reply: boolean;
+  media_count: number;
+  helpful_count: number;
+  created_at: Date;
 }

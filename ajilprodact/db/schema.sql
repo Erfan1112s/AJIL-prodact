@@ -7,10 +7,15 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- ==========================================
 -- حذف جدول‌های موجود (برای اجرای مجدد)
+-- ترتیب: فرزندان قبل از والدین
 -- ==========================================
+DROP TABLE IF EXISTS review_votes;
+DROP TABLE IF EXISTS review_media;
+DROP TABLE IF EXISTS product_reviews;
 DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS orders;
-DROP TABLE IF EXISTS branch_branch_stock;
+DROP TABLE IF EXISTS product_branch_stock;
+DROP TABLE IF EXISTS branch_inventory;
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS batches;
 DROP TABLE IF EXISTS product_images;
@@ -98,8 +103,6 @@ CREATE TABLE products (
 
 -- ==========================================
 -- جدول 4: product_variants
--- هر محصول می‌تواند چندین بسته‌بندی مختلف داشته باشد
--- مثال: پسته 500 گرم در کیسه پلاستیکی، جعبه هدیه، قوطی
 -- ==========================================
 CREATE TABLE product_variants (
   id               INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -182,9 +185,7 @@ CREATE TABLE batches (
 
 -- ==========================================
 -- جدول 7: product_branch_stock
--- موجودی هر محصول در هر شعبه بر اساس وزن
--- هر محصول یک وزن کل در هر شعبه دارد
--- بسته‌بندی‌ها از این وزن مصرف می‌کنند
+-- موجودی وزن‌محور هر محصول در هر شعبه
 -- ==========================================
 CREATE TABLE product_branch_stock (
   id                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -205,6 +206,7 @@ CREATE TABLE product_branch_stock (
     ON DELETE CASCADE
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- ==========================================
 -- جدول 8: admin_users
@@ -340,5 +342,83 @@ CREATE TABLE order_items (
   CONSTRAINT fk_order_items_variant
     FOREIGN KEY (variant_id) REFERENCES product_variants(id)
     ON DELETE RESTRICT
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ==========================================
+-- جدول 12: product_reviews (جدید)
+-- ==========================================
+CREATE TABLE product_reviews (
+  id                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  product_id             INT UNSIGNED NOT NULL,
+  customer_id            INT UNSIGNED NOT NULL,
+  rating                 TINYINT UNSIGNED NOT NULL,
+  title                  VARCHAR(100) NULL,
+  body                   TEXT NULL,
+  is_verified_purchase   TINYINT(1) NOT NULL DEFAULT 0,
+  is_approved            TINYINT(1) NOT NULL DEFAULT 0,
+  approved_at            TIMESTAMP NULL,
+  admin_reply            TEXT NULL,
+  admin_reply_at         TIMESTAMP NULL,
+  helpful_count          INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_review_customer_product (customer_id, product_id),
+  KEY idx_reviews_product_approved (product_id, is_approved),
+  KEY idx_reviews_approved_created (is_approved, created_at),
+  KEY idx_reviews_customer (customer_id),
+  KEY idx_reviews_rating (rating),
+  CONSTRAINT fk_reviews_product
+    FOREIGN KEY (product_id) REFERENCES products(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_reviews_customer
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ==========================================
+-- جدول 13: review_media (جدید)
+-- ==========================================
+CREATE TABLE review_media (
+  id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  review_id      INT UNSIGNED NOT NULL,
+  media_type     ENUM('IMAGE', 'VIDEO') NOT NULL DEFAULT 'IMAGE',
+  url            VARCHAR(500) NOT NULL,
+  thumbnail_url  VARCHAR(500) NULL,
+  sort_order     INT NOT NULL DEFAULT 0,
+  created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_review_media_review (review_id, sort_order),
+  CONSTRAINT fk_review_media_review
+    FOREIGN KEY (review_id) REFERENCES product_reviews(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ==========================================
+-- جدول 14: review_votes (جدید)
+-- ==========================================
+CREATE TABLE review_votes (
+  id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  review_id    INT UNSIGNED NOT NULL,
+  customer_id  INT UNSIGNED NOT NULL,
+  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_review_vote (review_id, customer_id),
+  KEY idx_review_votes_review (review_id),
+  KEY idx_review_votes_customer (customer_id),
+  CONSTRAINT fk_review_votes_review
+    FOREIGN KEY (review_id) REFERENCES product_reviews(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_review_votes_customer
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+    ON DELETE CASCADE
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

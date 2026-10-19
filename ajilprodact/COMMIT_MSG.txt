@@ -366,3 +366,62 @@ refactor: تبدیل معماری موجودی به وزن‌محور + تکمی
 - به‌روزرسانی تایپ‌ها در lib/types.ts (ProductBranchStockRow, VariantBranchStock)
 - افزودن توابع formatWeight و calculateTotalWeight به lib/utils.ts
 - بهبود UX فرم‌های ادمین با پیش‌نمایش وزن
+
+refactor: موجودی وزن‌محور، بسته‌بندی چندگانه و شروع بخش نظرات
+
+تغییرات معماری دیتابیس:
+- حذف جدول branch_inventory و ایجاد product_branch_stock
+- موجودی هر محصول در هر شعبه بر اساس total_weight_grams و reserved_weight_grams
+- محاسبه داینامیک تعداد بسته قابل فروش (available_grams / weight_gram)
+- افزودن packaging_type و packaging_label به product_variants
+- افزودن packaging_type و packaging_label به order_items
+- افزودن سه جدول نظرات: product_reviews, review_media, review_votes
+- به‌روزرسانی کامل schema.sql با 14 جدول
+- ایجاد migration 004-weight-based-stock.sql برای مهاجرت داده
+- ایجاد migration 005-reviews.sql برای جداول نظرات
+
+منطق موجودی وزن‌محور:
+- بازنویسی lib/queries/branches.ts بر اساس وزن
+- بازنویسی lib/queries/branches-admin.ts با آمار وزنی
+- به‌روزرسانی منطق رزرو در app/checkout/actions.ts
+- تبدیل رزرو به مصرف در app/api/payment/verify/route.ts
+- آزادسازی رزرو هنگام لغو پرداخت
+
+بسته‌بندی چندگانه:
+- کامپوننت VariantPackagingSelect با 8 نوع بسته‌بندی
+- پشتیبانی از packaging در ProductForm با آپلود تصویر جداگانه
+- نمایش بسته‌بندی در ProductVariantSelector فروشگاه
+- ذخیره بسته‌بندی در CartItem و order_items
+- به‌روزرسانی lib/cart/types.ts
+
+پنل ادمین:
+- ایجاد صفحه مشتریان (/admin/customers) با فیلتر و جست‌وجو
+- ایجاد صفحه جزئیات مشتری با سفارشات
+- ایجاد صفحات placeholder تخفیف‌ها و تنظیمات
+- بازنویسی InventoryTable برای نمایش وزن کل محصولات
+- بازنویسی BranchesList با آمار وزنی
+- به‌روزرسانی داشبورد با لینک به مشتریان
+- رفع 404 در همه لینک‌های سایدبار
+
+بخش نظرات (شروع):
+- migration 005-reviews.sql با سه جدول
+- به‌روزرسانی schema.sql با جداول نظرات
+- افزودن تایپ‌های ProductReviewRow, ReviewMediaRow, ReviewVoteRow
+- افزودن تایپ‌های ترکیبی ProductReviewWithDetails و ProductReviewStats
+- افزودن AdminReviewListItem برای پنل ادمین
+- افزودن ReviewAuthor برای نمایش امن اطلاعات نویسنده
+
+رفع باگ‌ها:
+- رفع خطای Invalid time value در formatDate
+- ایمن‌سازی توابع تاریخ در برابر مقادیر نامعتبر دیتابیس
+- رفع مشکل نمایش تصویر محصول با تغییر وزن
+
+بهبودها:
+- افزودن توابع formatWeight و calculateTotalWeight در lib/utils.ts
+- پیش‌نمایش زنده وزن در فرم ویرایش موجودی
+- بهبود UX فرم‌های ادمین با نمایش معادل کیلوگرم
+
+نکات:
+- بدون پکیج جدید
+- همه تغییرات با تست شده‌اند
+- دیتابیس روی لوکال و هاست آماده migration است
