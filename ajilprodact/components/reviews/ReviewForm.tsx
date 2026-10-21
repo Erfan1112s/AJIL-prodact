@@ -11,7 +11,7 @@ import {
   submitReviewAction,
   deleteMyReviewAction,
   type ReviewMediaInput,
-} from '@/app/products/[slug]/reviews/actions';
+} from '@/app/(site)/products/[slug]/reviews/actions';
 import { TrashIcon, PlusIcon } from '@/components/admin/icons';
 
 // ==========================================

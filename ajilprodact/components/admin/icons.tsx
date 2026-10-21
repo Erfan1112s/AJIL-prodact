@@ -1,5 +1,5 @@
 // components/admin/icons.tsx
-// آیکون‌های اختصاصی پنل ادمین
+// آیکون‌های SVG اختصاصی پنل ادمین
 
 import type { SVGProps } from 'react';
 
@@ -14,6 +14,10 @@ const baseProps = {
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
 };
+
+// ==========================================
+// ناوبری اصلی
+// ==========================================
 
 export function DashboardIcon(props: IconProps) {
   return (
@@ -84,6 +88,18 @@ export function TagIcon(props: IconProps) {
   );
 }
 
+// ==========================================
+// آیکون نظرات (جدید)
+// ==========================================
+
+export function MessageSquareIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
 export function SettingsIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -93,10 +109,22 @@ export function SettingsIcon(props: IconProps) {
   );
 }
 
+// ==========================================
+// منو و ناوبری
+// ==========================================
+
 export function ChevronDownIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
       <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="m15 18-6-6 6-6" />
     </svg>
   );
 }
@@ -127,13 +155,9 @@ export function CloseIcon(props: IconProps) {
   );
 }
 
-export function ChevronLeftIcon(props: IconProps) {
-  return (
-    <svg {...baseProps} {...props}>
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  );
-}
+// ==========================================
+// عملیات
+// ==========================================
 
 export function PlusIcon(props: IconProps) {
   return (
@@ -172,6 +196,10 @@ export function SearchIcon(props: IconProps) {
   );
 }
 
+// ==========================================
+// آماری و عمومی
+// ==========================================
+
 export function TrendingUpIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -196,6 +224,16 @@ export function AlertIcon(props: IconProps) {
     <svg {...baseProps} {...props}>
       <circle cx="12" cy="12" r="10" />
       <path d="M12 8v4M12 16h.01" />
+    </svg>
+  );
+}
+
+// آیکون کاربر تکی (برای user menu در هدر)
+export function UserIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
     </svg>
   );
 }

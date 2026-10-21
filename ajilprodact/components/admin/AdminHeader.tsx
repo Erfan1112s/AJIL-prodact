@@ -11,8 +11,7 @@ import {
   LogoutIcon,
   UserIcon,
 } from '@/components/admin/icons';
-import { adminLogoutAction } from '@/app/admin/actions';
-
+import { logoutAction } from '@/app/admin/actions';
 // نقشه‌برداری مسیر به عنوان
 const ROUTE_MAP: Record<string, string> = {
   '/admin': 'داشبورد',

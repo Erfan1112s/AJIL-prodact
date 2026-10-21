@@ -127,7 +127,7 @@ export default function ReviewsTable({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="جست‌وجو: نام مشتری، موبایل، عنوان نظر..."
+              placeholder="جست‌وجو: نام مشتری، موبایل، عنوان..."
               className="w-full pr-10 pl-3 py-2.5 rounded-xl border border-coffee-200 bg-cream-50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none text-sm"
             />
           </div>
@@ -141,7 +141,6 @@ export default function ReviewsTable({
 
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
-            {/* فیلتر وضعیت */}
             <div className="flex items-center gap-1 rounded-lg bg-cream-100 p-1">
               {(
                 [
@@ -169,7 +168,6 @@ export default function ReviewsTable({
               ))}
             </div>
 
-            {/* فیلتر امتیاز */}
             <select
               value={currentRating ?? ''}
               onChange={(e) =>
@@ -377,7 +375,6 @@ export default function ReviewsTable({
             </h3>
             <p className="text-sm text-coffee-600 text-center leading-6 mb-5">
               نظر «{confirmDelete.customerName}» برای «{confirmDelete.productName}» حذف شود؟
-              این عمل قابل بازگشت نیست.
             </p>
             <div className="flex gap-2">
               <button
@@ -419,12 +416,9 @@ export default function ReviewsTable({
                 disabled={isPending}
                 rows={5}
                 maxLength={1000}
-                placeholder="پاسخ خود را بنویسید... (خالی بگذارید تا پاسخ حذف شود)"
-                className="w-full px-4 py-3 rounded-xl border border-coffee-200 bg-cream-50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-sm resize-none"
+                placeholder="پاسخ خود را بنویسید... (خالی = حذف پاسخ)"
+                className="w-full px-4 py-3 rounded-xl border border-coffee-200 bg-cream-50 focus:bg-white focus:border-gold-500 outline-none text-sm resize-none"
               />
-              <div className="text-[10px] text-coffee-400 mt-1 text-left fa-num">
-                {replyText.length.toLocaleString('fa-IR')} / ۱۰۰۰
-              </div>
 
               {replyError && (
                 <div className="mt-3">
@@ -446,7 +440,7 @@ export default function ReviewsTable({
                   disabled={isPending}
                   className="flex-1 px-4 py-2.5 rounded-xl btn-gold text-sm font-bold disabled:opacity-50"
                 >
-                  {isPending ? 'در حال ذخیره...' : 'ذخیره پاسخ'}
+                  {isPending ? 'در حال ذخیره...' : 'ذخیره'}
                 </button>
               </div>
             </form>

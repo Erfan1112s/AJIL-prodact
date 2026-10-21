@@ -1,5 +1,5 @@
 // components/admin/AdminSidebar.tsx
-// سایدبار پنل ادمین با ناوبری کامل
+// سایدبار پنل ادمین
 
 'use client';
 
@@ -14,6 +14,7 @@ import {
   StoreIcon,
   UsersIcon,
   TagIcon,
+  MessageSquareIcon,
   SettingsIcon,
   MenuIcon,
   CloseIcon,
@@ -58,6 +59,11 @@ const NAV_ITEMS: NavItem[] = [
     icon: <UsersIcon className="w-5 h-5" />,
   },
   {
+    href: '/admin/reviews',
+    label: 'نظرات کاربران',
+    icon: <MessageSquareIcon className="w-5 h-5" />,
+  },
+  {
     href: '/admin/discounts',
     label: 'تخفیف‌ها',
     icon: <TagIcon className="w-5 h-5" />,
@@ -73,12 +79,10 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // بستن drawer هنگام تغییر مسیر
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  // قفل اسکرول هنگام باز بودن drawer
   useEffect(() => {
     if (mobileOpen) {
       document.body.style.overflow = 'hidden';
@@ -97,7 +101,6 @@ export default function AdminSidebar() {
 
   const sidebarContent = (
     <>
-      {/* لوگو */}
       <div className="h-16 flex items-center px-5 border-b border-coffee-800/60">
         <Link href="/admin" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-coffee-900 font-bold shadow-lg shadow-gold-500/20 group-hover:scale-105 transition-transform">
@@ -114,7 +117,6 @@ export default function AdminSidebar() {
         </Link>
       </div>
 
-      {/* ناوبری */}
       <nav className="flex-1 overflow-y-auto py-3 px-3">
         <div className="space-y-0.5">
           {NAV_ITEMS.map((item) => {
@@ -130,7 +132,6 @@ export default function AdminSidebar() {
                     : 'text-coffee-200 hover:bg-coffee-800/60 hover:text-cream-50'
                 }`}
               >
-                {/* نوار طلایی فعال */}
                 {active && (
                   <span className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-l-full bg-gradient-to-b from-gold-400 to-gold-600" />
                 )}
@@ -149,7 +150,6 @@ export default function AdminSidebar() {
                   {item.label}
                 </span>
 
-                {/* نشان (اگر بود) */}
                 {item.badge !== undefined && item.badge > 0 && (
                   <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-gold-500 text-coffee-900 text-[10px] font-bold flex items-center justify-center fa-num">
                     {item.badge.toLocaleString('fa-IR')}
@@ -161,7 +161,6 @@ export default function AdminSidebar() {
         </div>
       </nav>
 
-      {/* پایین سایدبار */}
       <div className="p-3 border-t border-coffee-800/60">
         <Link
           href="/"
@@ -189,7 +188,6 @@ export default function AdminSidebar() {
 
   return (
     <>
-      {/* دکمه باز کردن منو در موبایل */}
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
@@ -199,24 +197,19 @@ export default function AdminSidebar() {
         <MenuIcon className="w-5 h-5" />
       </button>
 
-      {/* سایدبار دسکتاپ */}
       <aside className="hidden lg:flex fixed top-0 right-0 bottom-0 w-64 bg-gradient-to-b from-coffee-900 to-coffee-800 flex-col z-20">
         {sidebarContent}
       </aside>
 
-      {/* Drawer موبایل */}
       {mobileOpen && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 z-40 bg-coffee-900/60 backdrop-blur-sm lg:hidden animate-fade-in"
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
 
-          {/* Drawer */}
           <aside className="fixed top-0 right-0 bottom-0 z-50 w-72 max-w-[85vw] bg-gradient-to-b from-coffee-900 to-coffee-800 flex flex-col shadow-2xl lg:hidden animate-slide-down">
-            {/* دکمه بستن */}
             <button
               type="button"
               onClick={() => setMobileOpen(false)}

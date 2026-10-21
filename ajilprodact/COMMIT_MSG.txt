@@ -468,3 +468,33 @@ API:
 - formatRelativeTime در lib/utils
 - فرمت تاریخ مقاوم در برابر مقادیر نامعتبر
 - اعداد فارسی در همه‌جا
+
+fix: جداسازی لایوت سایت و پنل ادمین و تکمیل بخش نظرات ادمین
+
+لایوت و ساختار مسیرها:
+- جدا کردن صفحات عمومی به Route Group (site)
+- حذف Header و Footer از لایوت ریشه
+- ایجاد app/(site)/layout.tsx برای صفحات فروشگاه
+- بازنویسی app/admin/layout.tsx با AdminSidebar و AdminHeader
+- رفع مشکل افتادن فوتر زیر سایدبار ادمین
+- رفع تداخل دکمه همبرگری ادمین با هدر سایت
+
+پنل ادمین:
+- ساخت components/admin/reviews/ReviewsTable.tsx
+- ساخت app/admin/reviews/page.tsx با فیلتر و صفحه‌بندی
+- ساخت app/admin/reviews/actions.ts
+- افزودن لینک «نظرات کاربران» به سایدبار
+- افزودن MessageSquareIcon و UserIcon به icons.tsx
+- اصلاح import adminLogoutAction به logoutAction در AdminHeader
+
+بخش نظرات:
+- رفع نام فایل ReviwCard.tsx به ReviewCard.tsx
+- ساخت components/reviews/HelpfulButton.tsx
+- اصلاح مسیر import در HelpfulButton به /app/(site)/...
+- اصلاح import ReviewCard در ReviewList
+
+نتیجه:
+- صفحات عمومی با هدر و فوتر سایت
+- پنل ادمین فقط با سایدبار و هدر اختصاصی
+- بخش نظرات ادمین با تایید، رد، پاسخ و حذف
+- URLها بدون تغییر (Route Group)

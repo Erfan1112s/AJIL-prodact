@@ -1,15 +1,21 @@
 // app/products/[slug]/page.tsx
-// صفحه تک محصول
+// صفحه تک محصول با نظرات کاربران
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProductBySlug } from '@/lib/queries/products';
-import { getVariantAvailability, getTotalStockForVariant } from '@/lib/queries/branches';
+import { getVariantAvailability } from '@/lib/queries/branches';
+import {
+  getProductReviewStats,
+  canUserReviewProduct,
+  getUserReviewWithMedia,
+} from '@/lib/queries/reviews';
+import { getCurrentCustomerId } from '@/lib/auth/customer-session';
 import ProductDetailClient from '@/components/ProductDetailClient';
+import ReviewsSummary from '@/components/reviews/ReviewsSummary';
 import Container from '@/components/Container';
 import { MapPinIcon } from '@/components/icons';
-import { formatDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +45,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return 'ثبت نشده';
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'ثبت نشده';
+    return new Intl.DateTimeFormat('fa-IR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(d);
+  } catch {
+    return 'ثبت نشده';
+  }
+}
+
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
 
@@ -46,17 +67,29 @@ export default async function ProductPage({ params }: Props) {
   if (!product) notFound();
 
   const firstVariant = product.variants[0];
-  const [branchStock, variantStockMap] = await Promise.all([
-    firstVariant ? getVariantAvailability(firstVariant.id) : Promise.resolve([]),
-    Promise.all(
-      product.variants.map(async (variant) => [
-        variant.id,
-        await getTotalStockForVariant(variant.id),
-      ])
-    ).then((entries) => Object.fromEntries(entries)),
-  ]);
+  const branchStock = firstVariant
+    ? await getVariantAvailability(firstVariant.id)
+    : [];
 
-  const totalAvailable = branchStock.reduce((sum, b) => sum + (b.available ?? 0), 0);
+  const totalAvailableUnits = branchStock.reduce(
+    (sum, b) => sum + b.available_units,
+    0
+  );
+
+  // ==========================================
+  // نظرات
+  // ==========================================
+  const customerId = await getCurrentCustomerId();
+
+  const [reviewStats, canReview, existingReview] = await Promise.all([
+    getProductReviewStats(product.id),
+    customerId
+      ? canUserReviewProduct(customerId, product.id)
+      : Promise.resolve(false),
+    customerId
+      ? getUserReviewWithMedia(customerId, product.id)
+      : Promise.resolve(null),
+  ]);
 
   return (
     <main className="min-h-screen">
@@ -78,9 +111,33 @@ export default async function ProductPage({ params }: Props) {
         </Container>
       </div>
 
-      {/* کلاینت اصلی: Hero + انتخاب واریانت + اطلاعات سریع */}
+      {/* کلاینت اصلی */}
       <Container className="py-6 sm:py-8">
-        <ProductDetailClient product={product} variantStockMap={variantStockMap} />
+        <ProductDetailClient product={product} />
+      </Container>
+
+      {/* ==========================================
+          بخش نظرات
+          ========================================== */}
+      <Container className="py-8">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-1 h-7 rounded-full bg-gradient-to-b from-gold-400 to-gold-700" />
+          <h2 className="text-xl font-bold text-coffee-900">
+            نظرات کاربران
+          </h2>
+          {reviewStats.total_count > 0 && (
+            <span className="text-xs text-coffee-500 fa-num">
+              ({reviewStats.total_count.toLocaleString('fa-IR')} نظر)
+            </span>
+          )}
+        </div>
+
+        <ReviewsSummary
+          productSlug={product.slug}
+          stats={reviewStats}
+          canReview={canReview}
+          hasExistingReview={Boolean(existingReview)}
+        />
       </Container>
 
       {/* توضیحات کامل */}
@@ -145,7 +202,6 @@ export default async function ProductPage({ params }: Props) {
                   highlight
                 />
 
-                {/* امتیاز تازگی */}
                 <tr className="border-b border-coffee-100">
                   <td className="px-5 py-3.5 text-coffee-500 text-sm w-1/3">
                     امتیاز تازگی
@@ -195,13 +251,14 @@ export default async function ProductPage({ params }: Props) {
                 </h2>
               </div>
               <span
-                className={`text-xs px-3 py-1 rounded-full fa-num ${totalAvailable > 0
+                className={`text-xs px-3 py-1 rounded-full fa-num ${
+                  totalAvailableUnits > 0
                     ? 'bg-brand-50 text-brand-700'
                     : 'bg-cream-100 text-coffee-500'
-                  }`}
+                }`}
               >
-                {totalAvailable > 0
-                  ? `${totalAvailable.toLocaleString('fa-IR')} عدد در دسترس`
+                {totalAvailableUnits > 0
+                  ? `${totalAvailableUnits.toLocaleString('fa-IR')} بسته در دسترس`
                   : 'در حال حاضر ناموجود'}
               </span>
             </div>
@@ -227,9 +284,9 @@ export default async function ProductPage({ params }: Props) {
                       </div>
                     </div>
 
-                    {b.available > 0 ? (
+                    {b.available_units > 0 ? (
                       <span className="text-xs px-2 py-1 rounded-lg bg-gold-50 text-gold-700 font-medium fa-num shrink-0 border border-gold-200">
-                        {b.available.toLocaleString('fa-IR')} عدد
+                        {b.available_units.toLocaleString('fa-IR')} بسته
                       </span>
                     ) : (
                       <span className="text-xs px-2 py-1 rounded-lg bg-cream-100 text-coffee-500 shrink-0">
@@ -270,8 +327,9 @@ function BatchRow({
     <tr className={!isLast ? 'border-b border-coffee-100' : ''}>
       <td className="px-5 py-3.5 text-coffee-500 text-sm w-1/3">{label}</td>
       <td
-        className={`px-5 py-3.5 text-sm ${highlight ? 'text-gold-700 font-semibold' : 'text-coffee-800'
-          } ${ltr ? 'fa-num' : ''}`}
+        className={`px-5 py-3.5 text-sm ${
+          highlight ? 'text-gold-700 font-semibold' : 'text-coffee-800'
+        } ${ltr ? 'fa-num' : ''}`}
         dir={ltr ? 'ltr' : 'rtl'}
       >
         {value}

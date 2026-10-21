@@ -4,8 +4,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { voteHelpfulAction } from '@/app/products/[slug]/reviews/actions';
-
+import { voteHelpfulAction } from '@/app/(site)/products/[slug]/reviews/actions';
 interface Props {
   reviewId: number;
   productSlug: string;
