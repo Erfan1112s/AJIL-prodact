@@ -1,16 +1,19 @@
 -- db/seed.sql
 -- داده اولیه پروژه کاتالوگ آجیل و خشکبار
--- این نسخه با اسکیمای جدید (delivery_method, subtotal, ...) هماهنگ است
+-- با ساختار جدید: بسته‌بندی چندگانه + موجودی وزن‌محور + نظرات
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ==========================================
--- پاک‌سازی جدول‌ها
+-- پاک‌سازی جدول‌ها (ترتیب: فرزندان قبل از والدین)
 -- ==========================================
+DELETE FROM review_votes;
+DELETE FROM review_media;
+DELETE FROM product_reviews;
 DELETE FROM order_items;
 DELETE FROM orders;
-DELETE FROM branch_inventory;
+DELETE FROM product_branch_stock;
 DELETE FROM customers;
 DELETE FROM batches;
 DELETE FROM product_images;
@@ -21,9 +24,12 @@ DELETE FROM branches;
 DELETE FROM admin_users;
 
 -- بازنشانی AUTO_INCREMENT
+ALTER TABLE review_votes AUTO_INCREMENT = 1;
+ALTER TABLE review_media AUTO_INCREMENT = 1;
+ALTER TABLE product_reviews AUTO_INCREMENT = 1;
 ALTER TABLE order_items AUTO_INCREMENT = 1;
 ALTER TABLE orders AUTO_INCREMENT = 1;
-ALTER TABLE branch_inventory AUTO_INCREMENT = 1;
+ALTER TABLE product_branch_stock AUTO_INCREMENT = 1;
 ALTER TABLE customers AUTO_INCREMENT = 1;
 ALTER TABLE batches AUTO_INCREMENT = 1;
 ALTER TABLE product_images AUTO_INCREMENT = 1;
@@ -95,46 +101,61 @@ VALUES
 
 
 -- ==========================================
--- واریانت‌ها (وزن و قیمت + image_url)
+-- واریانت‌ها (وزن + بسته‌بندی)
+-- شناسه‌های خودکار:
+--   1: پسته 250g استاندارد
+--   2: پسته 500g استاندارد
+--   3: پسته 1000g استاندارد
+--   4: پسته 500g جعبه هدیه
+--   5: بادام 250g
+--   6: بادام 500g
+--   7: بادام 1000g
+--   8: فندق 250g
+--   9: فندق 500g
+--   10: بادام هندی 250g
+--   11: بادام هندی 500g
+--   12: تخمه 250g
+--   13: تخمه 500g
 -- ==========================================
 INSERT INTO product_variants
-  (product_id, weight_gram, packaging_type, packaging_label, price, compare_price, sku, image_url, is_active) VALUES
+  (product_id, weight_gram, packaging_type, packaging_label, price, compare_price, sku, image_url) VALUES
   -- پسته اکبری
-  (1, 250, 'standard', NULL, 450000, NULL, 'PST-AKB-250', NULL, 1),
-  (1, 500, 'standard', NULL, 880000, 950000, 'PST-AKB-500', NULL, 1),
-  (1, 1000, 'standard', NULL, 1720000, NULL, 'PST-AKB-1000', NULL, 1),
+  (1, 250,  'standard',  NULL,              450000,  NULL,   'PST-AKB-250',      NULL),
+  (1, 500,  'standard',  NULL,              880000,  950000, 'PST-AKB-500',      NULL),
+  (1, 1000, 'standard',  NULL,              1720000, NULL,   'PST-AKB-1000',     NULL),
+  (1, 500,  'gift_box',  'جعبه هدیه چوبی',  980000,  NULL,   'PST-AKB-500-GIFT', NULL),
 
   -- بادام درختی
-  (2, 250, 'standard', NULL, 280000, NULL, 'BDM-DRK-250', NULL, 1),
-  (2, 500, 'standard', NULL, 550000, NULL, 'BDM-DRK-500', NULL, 1),
-  (2, 1000, 'standard', NULL, 1080000, NULL, 'BDM-DRK-1000', NULL, 1),
+  (2, 250,  'standard',  NULL, 280000,  NULL, 'BDM-DRK-250',  NULL),
+  (2, 500,  'standard',  NULL, 550000,  NULL, 'BDM-DRK-500',  NULL),
+  (2, 1000, 'standard',  NULL, 1080000, NULL, 'BDM-DRK-1000', NULL),
 
   -- فندق
-  (3, 250, 'standard', NULL, 320000, NULL, 'FND-PST-250', NULL, 1),
-  (3, 500, 'standard', NULL, 630000, NULL, 'FND-PST-500', NULL, 1),
+  (3, 250,  'standard',  NULL, 320000, NULL, 'FND-PST-250', NULL),
+  (3, 500,  'standard',  NULL, 630000, NULL, 'FND-PST-500', NULL),
 
   -- بادام هندی
-  (4, 250, 'standard', NULL, 520000, NULL, 'BDH-SHR-250', NULL, 1),
-  (4, 500, 'standard', NULL, 1020000, NULL, 'BDH-SHR-500', NULL, 1),
+  (4, 250,  'standard',  NULL, 520000,  NULL, 'BDH-SHR-250', NULL),
+  (4, 500,  'standard',  NULL, 1020000, NULL, 'BDH-SHR-500', NULL),
 
   -- تخمه
-  (5, 250, 'standard', NULL, 120000, NULL, 'TKH-AFT-250', NULL, 1),
-  (5, 500, 'standard', NULL, 230000, NULL, 'TKH-AFT-500', NULL, 1);
+  (5, 250,  'standard',  NULL, 120000, NULL, 'TKH-AFT-250', NULL),
+  (5, 500,  'standard',  NULL, 230000, NULL, 'TKH-AFT-500', NULL);
 
 
 -- ==========================================
 -- تصاویر محصولات
 -- ==========================================
 INSERT INTO product_images (product_id, url, alt, sort_order, is_primary) VALUES
-  (1, '/images/products/پسته اکبری.jpg', 'پسته اکبری ممتاز', 1, 1),
-  (2, '/images/products/بادام درختی خام.jpg', 'بادام درختی خام', 1, 1),
-  (3, '/images/products/فندق.jpg', 'فندق با پوست', 1, 1),
-  (4, '/images/products/بادام هندی.jpg', 'بادام هندی شور', 1, 1),
-  (5, '/images/products/تخمه افتاب گردون.jpg', 'تخمه آفتابگردان', 1, 1);
+  (1, '/images/products/پسته اکبری.jpg',   'پسته اکبری ممتاز',          1, 1),
+  (2, '/images/products/بادام درختی خام.jpg', 'بادام درختی خام',           1, 1),
+  (3, '/images/products/فندق.jpg',        'فندق با پوست',              1, 1),
+  (4, '/images/products/بادام هندی.jpg',    'بادام هندی شور',            1, 1),
+  (5, '/images/products/تخمه افتاب گردون.jpg',         'تخمه آفتابگردان',           1, 1);
 
 
 -- ==========================================
--- بچ‌های تولید با ستون‌های تازگی
+-- بچ‌های تولید (با ستون‌های تازگی)
 -- ==========================================
 INSERT INTO batches
   (batch_code, product_id, supplier_name, harvest_date, roast_date, pack_date, expiry_date,
@@ -154,17 +175,17 @@ VALUES
 
 
 -- ==========================================
--- موجودی شعبه بر اساس وزن محصول
+-- موجودی شعبه (بر اساس وزن)
+-- هر محصول یک وزن کل در شعبه دارد
 -- ==========================================
--- محاسبه‌شده از داده قبلی: هر محصول با مجموع وزن
 INSERT INTO product_branch_stock
   (branch_id, product_id, total_weight_grams, reserved_weight_grams)
 VALUES
-  (1, 1, 75000, 0),   -- پسته اکبری: 75 کیلو
-  (1, 2, 55000, 0),   -- بادام درختی: 55 کیلو
-  (1, 3, 25000, 0),   -- فندق: 25 کیلو
-  (1, 4, 45000, 0),   -- بادام هندی: 45 کیلو
-  (1, 5, 50000, 0);   -- تخمه: 50 کیلو
+  (1, 1, 75000, 0),   -- پسته: 75 کیلوگرم
+  (1, 2, 55000, 0),   -- بادام درختی: 55 کیلوگرم
+  (1, 3, 25000, 0),   -- فندق: 25 کیلوگرم
+  (1, 4, 45000, 0),   -- بادام هندی: 45 کیلوگرم
+  (1, 5, 50000, 0);   -- تخمه: 50 کیلوگرم
 
 
 -- ==========================================
@@ -174,13 +195,13 @@ INSERT INTO customers
   (id, phone, full_name, email, default_address, order_count, last_order_at)
 VALUES
   (1, '09121234567', 'علی رضایی',  'ali@example.com',    'اصفهان، سعادت‌آباد، کوچه 5', 3, '2025-09-20 10:30:00'),
-  (2, '09351112233', 'مریم احمدی', 'maryam@example.com', 'اصفهان، ونک، خیابان گاندی',   1, '2025-09-18 15:45:00'),
-  (3, '09197778899', 'حسن کریمی',  NULL,                 'کرج، عظیمیه، بلوار اصلی',    5, '2025-09-22 09:00:00'),
-  (4, '09361234567', 'زهرا موسوی', NULL,                 NULL,                          0, NULL);
+  (2, '09351112233', 'مریم احمدی', 'maryam@example.com', 'اصفهان، ونک، خیابان گاندی',  1, '2025-09-18 15:45:00'),
+  (3, '09197778899', 'حسن کریمی',  NULL,                 'کرج، عظیمیه، بلوار اصلی',   5, '2025-09-22 09:00:00'),
+  (4, '09361234567', 'زهرا موسوی', NULL,                 NULL,                         0, NULL);
 
 
 -- ==========================================
--- سفارشات نمونه (با ستون‌های جدید)
+-- سفارشات نمونه
 -- ==========================================
 INSERT INTO orders
   (order_number, customer_id, customer_name, customer_phone,
@@ -209,14 +230,29 @@ VALUES
 
 
 -- ==========================================
--- اقلام سفارش
+-- اقلام سفارش (با packaging)
 -- ==========================================
 INSERT INTO order_items
-  (order_id, product_id, variant_id, product_name, weight_gram, price, quantity)
+  (order_id, product_id, variant_id, product_name, weight_gram,
+   packaging_type, packaging_label, price, quantity)
 VALUES
-  (1, 1, 2, 'پسته اکبری ممتاز', 500,  880000,  1),
-  (2, 1, 1, 'پسته اکبری ممتاز', 250,  450000,  1),
-  (3, 1, 3, 'پسته اکبری ممتاز', 1000, 1720000, 1);
+  (1, 1, 2, 'پسته اکبری ممتاز', 500,  'standard', NULL, 880000,  1),
+  (2, 1, 1, 'پسته اکبری ممتاز', 250,  'standard', NULL, 450000,  1),
+  (3, 1, 3, 'پسته اکبری ممتاز', 1000, 'standard', NULL, 1720000, 1);
+
+
+-- ==========================================
+-- نظر نمونه (تاییدشده)
+-- از مشتری 1 (علی رضایی) برای پسته اکبری
+-- چون سفارش ORD-1404001 با وضعیت DELIVERED دارد
+-- ==========================================
+INSERT INTO product_reviews
+  (product_id, customer_id, rating, title, body,
+   is_verified_purchase, is_approved, approved_at, created_at)
+VALUES
+  (1, 1, 5, 'عالی بود',
+   'کیفیت پسته اکبری فوق‌العاده بود. تازه و خوش‌طعم. حتماً دوباره سفارش می‌دم.',
+   1, 1, '2025-09-25 10:00:00', '2025-09-22 14:30:00');
 
 
 -- ==========================================
@@ -227,4 +263,7 @@ VALUES
 -- و در دیتابیس جایگزین کن
 -- ==========================================
 INSERT INTO admin_users (username, password_hash, full_name, role) VALUES
-  ('admin', 'PLACEHOLDER_REPLACE_WITH_REAL_HASH', 'مدیر سیستم', 'SUPER_ADMIN');
+  ('admin', 'ab7b41b119b2e0b55902222d3eedf82c:57cb23289295fdc7f0b5765295009bbbcd9460e0c7eb4d806363a5fe1d8be44a998509e2ac53f27230fe850200fdf6ffcd6a573a24a23407d08f8dc38c7423f6', 'مدیر سیستم', 'SUPER_ADMIN');
+
+
+

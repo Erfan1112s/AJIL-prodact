@@ -90,15 +90,17 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
   const totals = totalsRows[0];
 
-  // محصولات کم‌موجود (موجودی کل زیر 5)
+  // محصولات کم‌موجود (بر اساس وزن)
+  // تعریف: محصولاتی که available_weight_grams بین 1 تا 5000 گرم است
   const lowStockRows = await queryRows<{ cnt: number }>(
     `SELECT COUNT(*) AS cnt FROM (
-       SELECT pv.id
-       FROM product_variants pv
-       LEFT JOIN branch_inventory bi ON bi.variant_id = pv.id
-       WHERE pv.is_active = 1
-       GROUP BY pv.id
-       HAVING COALESCE(SUM(bi.stock - bi.reserved), 0) < 5
+       SELECT p.id
+       FROM products p
+       LEFT JOIN product_branch_stock pbs ON pbs.product_id = p.id
+       WHERE p.is_active = 1
+       GROUP BY p.id
+       HAVING COALESCE(SUM(pbs.total_weight_grams - pbs.reserved_weight_grams), 0) > 0
+          AND COALESCE(SUM(pbs.total_weight_grams - pbs.reserved_weight_grams), 0) < 5000
      ) AS low_stock`
   );
 
@@ -131,7 +133,6 @@ export interface SalesPoint {
 }
 
 export async function getSalesLast7Days(): Promise<SalesPoint[]> {
-  // خواندن فروش ۷ روز اخیر (از ۶ روز قبل تا امروز)
   const rows = await queryRows<{
     date: string;
     revenue: number;
@@ -148,7 +149,6 @@ export async function getSalesLast7Days(): Promise<SalesPoint[]> {
      ORDER BY DATE(created_at) ASC`
   );
 
-  // ساخت نقشه از تاریخ به ردیف
   const byDate = new Map<string, { revenue: number; cnt: number }>();
   for (const row of rows) {
     const key = String(row.date).slice(0, 10);
@@ -158,10 +158,16 @@ export async function getSalesLast7Days(): Promise<SalesPoint[]> {
     });
   }
 
-  // روزهای هفته
-  const dayNames = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
+  const dayNames = [
+    'یکشنبه',
+    'دوشنبه',
+    'سه‌شنبه',
+    'چهارشنبه',
+    'پنجشنبه',
+    'جمعه',
+    'شنبه',
+  ];
 
-  // پر کردن ۷ روز (حتی روزهای بدون فروش)
   const result: SalesPoint[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
@@ -206,37 +212,73 @@ export async function getRecentOrders(limit = 5): Promise<RecentOrder[]> {
 }
 
 // ==========================================
-// محصولات کم‌موجود
+// محصولات کم‌موجود (بر اساس وزن)
 // ==========================================
 
 export interface LowStockProduct {
-  variant_id: number;
   product_id: number;
   product_name: string;
   product_slug: string;
-  weight_gram: number;
-  stock_total: number;
+  category_name: string;
+  total_weight_grams: number;
+  reserved_weight_grams: number;
+  available_weight_grams: number;
+  variants_count: number;
+  image_url: string | null;
 }
 
-export async function getLowStockProducts(limit = 5): Promise<LowStockProduct[]> {
+export async function getLowStockProducts(
+  limit = 5
+): Promise<LowStockProduct[]> {
   const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 20);
 
-  const rows = await queryRows<LowStockProduct>(
+  const rows = await queryRows<{
+    product_id: number;
+    product_name: string;
+    product_slug: string;
+    category_name: string;
+    total_weight_grams: number;
+    reserved_weight_grams: number;
+    variants_count: number;
+    image_url: string | null;
+  }>(
     `SELECT
-       pv.id AS variant_id,
        p.id AS product_id,
        p.name AS product_name,
        p.slug AS product_slug,
-       pv.weight_gram,
-       COALESCE(SUM(bi.stock - bi.reserved), 0) AS stock_total
-     FROM product_variants pv
-     INNER JOIN products p ON p.id = pv.product_id
-     LEFT JOIN branch_inventory bi ON bi.variant_id = pv.id
-     WHERE pv.is_active = 1 AND p.is_active = 1
-     GROUP BY pv.id, p.id, p.name, p.slug, pv.weight_gram
-     HAVING stock_total < 5
-     ORDER BY stock_total ASC, p.name ASC
+       c.name AS category_name,
+       COALESCE(SUM(pbs.total_weight_grams), 0) AS total_weight_grams,
+       COALESCE(SUM(pbs.reserved_weight_grams), 0) AS reserved_weight_grams,
+       (SELECT COUNT(*) FROM product_variants pv
+        WHERE pv.product_id = p.id AND pv.is_active = 1) AS variants_count,
+       (SELECT url FROM product_images
+        WHERE product_id = p.id
+        ORDER BY is_primary DESC, sort_order ASC
+        LIMIT 1) AS image_url
+     FROM products p
+     INNER JOIN categories c ON c.id = p.category_id
+     LEFT JOIN product_branch_stock pbs ON pbs.product_id = p.id
+     WHERE p.is_active = 1
+     GROUP BY p.id, p.name, p.slug, c.name
+     HAVING COALESCE(SUM(pbs.total_weight_grams - pbs.reserved_weight_grams), 0) < 5000
+     ORDER BY
+       COALESCE(SUM(pbs.total_weight_grams - pbs.reserved_weight_grams), 0) ASC,
+       p.name ASC
      LIMIT ${safeLimit}`
   );
-  return rows;
+
+  return rows.map((r) => ({
+    product_id: Number(r.product_id),
+    product_name: r.product_name,
+    product_slug: r.product_slug,
+    category_name: r.category_name,
+    total_weight_grams: Number(r.total_weight_grams),
+    reserved_weight_grams: Number(r.reserved_weight_grams),
+    available_weight_grams: Math.max(
+      0,
+      Number(r.total_weight_grams) - Number(r.reserved_weight_grams)
+    ),
+    variants_count: Number(r.variants_count),
+    image_url: r.image_url,
+  }));
 }

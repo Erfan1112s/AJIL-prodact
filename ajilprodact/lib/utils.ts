@@ -100,3 +100,49 @@ export function calculateTotalWeight(
 ): number {
   return Math.max(0, count) * Math.max(0, weightPerUnit);
 }
+
+
+/**
+ * تبدیل تاریخ به فرمت نسبی فارسی
+ * مثال: «۳ روز پیش»، «۲ ساعت پیش»
+ */
+export function formatRelativeTime(
+  date: Date | string | null | undefined
+): string {
+  if (!date) return '';
+
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+
+    const now = Date.now();
+    const diffMs = now - d.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    const diffWeek = Math.floor(diffDay / 7);
+    const diffMonth = Math.floor(diffDay / 30);
+    const diffYear = Math.floor(diffDay / 365);
+
+    if (diffSec < 60) return 'همین حالا';
+    if (diffMin < 60) {
+      return `${diffMin.toLocaleString('fa-IR')} دقیقه پیش`;
+    }
+    if (diffHour < 24) {
+      return `${diffHour.toLocaleString('fa-IR')} ساعت پیش`;
+    }
+    if (diffDay < 7) {
+      return `${diffDay.toLocaleString('fa-IR')} روز پیش`;
+    }
+    if (diffWeek < 4) {
+      return `${diffWeek.toLocaleString('fa-IR')} هفته پیش`;
+    }
+    if (diffMonth < 12) {
+      return `${diffMonth.toLocaleString('fa-IR')} ماه پیش`;
+    }
+    return `${diffYear.toLocaleString('fa-IR')} سال پیش`;
+  } catch {
+    return '';
+  }
+}

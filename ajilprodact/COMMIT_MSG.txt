@@ -425,3 +425,46 @@ refactor: موجودی وزن‌محور، بسته‌بندی چندگانه و
 - بدون پکیج جدید
 - همه تغییرات با تست شده‌اند
 - دیتابیس روی لوکال و هاست آماده migration است
+
+feat: پیاده‌سازی کامل بخش نظرات کاربران
+
+دیتابیس:
+- جدول‌های product_reviews, review_media, review_votes
+- migration 005-reviews.sql
+- به‌روزرسانی schema.sql با 14 جدول
+
+لایه کوئری:
+- توابع خواندن نظرات با فیلتر و آمار
+- getUserReviewWithMedia برای ویرایش با رسانه
+- canUserReviewProduct (فقط خریداران DELIVERED)
+
+Server Actions:
+- submitReviewAction (ایجاد و ویرایش)
+- deleteMyReviewAction
+- voteHelpfulAction (toggle)
+- approveReviewAction, unapproveReviewAction
+- deleteReviewAction, replyToReviewAction
+
+UI فروشگاه:
+- ReviewForm با آپلود عکس و ویدیو
+- ReviewCard با Lightbox و پاسخ ادمین
+- ReviewList با فیلتر و صفحه‌بندی
+- ReviewsSummary با نمودار توزیع ستاره
+- صفحه /products/[slug]/reviews
+- StarRating با دو حالت (نمایش و انتخاب)
+- HelpfulButton با Optimistic UI
+
+UI ادمین:
+- ReviewsTable با تایید، رد، پاسخ، حذف
+- صفحه /admin/reviews
+- لینک در سایدبار
+
+API:
+- /api/reviews/upload با sharp و rate limiting
+- محدودیت 5MB عکس، 50MB ویدیو
+- تبدیل به WebP، چرخش EXIF
+
+بهبودها:
+- formatRelativeTime در lib/utils
+- فرمت تاریخ مقاوم در برابر مقادیر نامعتبر
+- اعداد فارسی در همه‌جا
