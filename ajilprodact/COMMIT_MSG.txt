@@ -498,3 +498,36 @@ fix: جداسازی لایوت سایت و پنل ادمین و تکمیل بخ�
 - پنل ادمین فقط با سایدبار و هدر اختصاصی
 - بخش نظرات ادمین با تایید، رد، پاسخ و حذف
 - URLها بدون تغییر (Route Group)
+
+
+feat(auth): فاز 1.1 - زیرساخت دیتابیس احراز هویت یکپارچه
+
+دیتابیس:
+- migration 006-unified-users.sql با 5 جدول جدید:
+  roles, permissions, role_permissions, users, user_sessions
+- 5 نقش پیش‌فرض: SUPER_ADMIN, ADMIN, ACCOUNTANT, SUPPORT_AGENT, CUSTOMER
+- 35 مجوز ریز در 13 گروه (products, orders, reviews, tickets, ...)
+- مهاجرت امن admin_users و customers به جدول users
+- حفظ FKها با customer_id و staff_id (بدون حذف جداول قدیمی)
+
+به‌روزرسانی schema.sql و seed.sql:
+- schema.sql با 19 جدول (14 قبلی + 5 جدید)
+- seed.sql شامل درج نقش‌ها، مجوزها و اتصال role_permissions
+- ترتیب DROP/CREATE با رعایت FK
+
+تایپ‌ها و ثابت‌ها:
+- lib/types.ts: UserRow, RoleRow, PermissionRow, UserSessionRow,
+  UserWithRole, UserWithPermissions, UserType, RoleName
+- lib/auth/roles.ts: ROLE_NAMES, PERMISSIONS, PERMISSION_GROUPS
+
+لایه کنترل دسترسی:
+- lib/auth/rbac.ts: getUserWithRole, getUserPermissions,
+  getCurrentUser, can, requirePermission, hasRole, requireRole,
+  isStaff, isCustomer, requireAuth, requireCurrentPermission
+- خطاهای اختصاصی: UnauthorizedError, ForbiddenError
+
+نکات:
+- کد فعلی سایت و پنل ادمین هنوز از getCurrentUserId مستقیم استفاده می‌کند
+- مهاجرت کامل به users و rbac در فاز 1.3 انجام می‌شود
+- بدون پکیج جدید نصب‌شده
+- همه جداول و داده‌ها با تست تست شدند

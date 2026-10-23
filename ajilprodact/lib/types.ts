@@ -191,13 +191,11 @@ export interface OrderItemRow {
 }
 
 // ==========================================
-// بخش 2: تایپ‌های نظرات (جدید)
+// بخش 2: تایپ‌های نظرات
 // ==========================================
 
-// نوع رسانه در نظرات
 export type ReviewMediaType = 'IMAGE' | 'VIDEO';
 
-// ردیف جدول product_reviews
 export interface ProductReviewRow {
   id: number;
   product_id: number;
@@ -215,7 +213,6 @@ export interface ProductReviewRow {
   updated_at: Date;
 }
 
-// ردیف جدول review_media
 export interface ReviewMediaRow {
   id: number;
   review_id: number;
@@ -226,7 +223,6 @@ export interface ReviewMediaRow {
   created_at: Date;
 }
 
-// ردیف جدول review_votes
 export interface ReviewVoteRow {
   id: number;
   review_id: number;
@@ -235,22 +231,110 @@ export interface ReviewVoteRow {
 }
 
 // ==========================================
-// بخش 3: تایپ‌های ترکیبی
+// بخش 3: تایپ‌های سیستم احراز هویت یکپارچه (فاز 1.1)
 // ==========================================
 
-// دسته‌بندی با فرزندانش
+// نوع کاربر
+export type UserType = 'CUSTOMER' | 'STAFF';
+
+// نام ثابت نقش‌ها (برای استفاده در کد)
+export type RoleName =
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'ACCOUNTANT'
+  | 'SUPPORT_AGENT'
+  | 'CUSTOMER';
+
+// ردیف جدول roles
+export interface RoleRow {
+  id: number;
+  name: string;
+  display_name: string;
+  description: string | null;
+  is_system: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// ردیف جدول permissions
+export interface PermissionRow {
+  id: number;
+  permission_key: string;
+  display_name: string;
+  group_name: string;
+  description: string | null;
+  created_at: Date;
+}
+
+// ردیف جدول role_permissions
+export interface RolePermissionRow {
+  role_id: number;
+  permission_id: number;
+  created_at: Date;
+}
+
+// ردیف جدول users
+export interface UserRow {
+  id: number;
+  phone: string | null;
+  username: string | null;
+  email: string | null;
+  password_hash: string | null;
+  full_name: string | null;
+  national_code: string | null;
+  user_type: UserType;
+  role_id: number;
+  customer_id: number | null;
+  staff_id: number | null;
+  is_active: number;
+  is_locked: number;
+  failed_login_count: number;
+  locked_until: Date | null;
+  last_login_at: Date | null;
+  last_login_ip: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// ردیف جدول user_sessions
+export interface UserSessionRow {
+  id: number;
+  user_id: number;
+  token_hash: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: Date;
+  last_active_at: Date;
+  expires_at: Date;
+  revoked_at: Date | null;
+}
+
+// کاربر با اطلاعات نقش (نتیجه JOIN)
+// این تایپ در تابع getCurrentUser استفاده می‌شود
+export interface UserWithRole extends UserRow {
+  role: RoleRow;
+}
+
+// کاربر با نقش و لیست مجوزها
+// این تایپ کامل‌ترین شکل اطلاعات کاربر است
+export interface UserWithPermissions extends UserWithRole {
+  permissions: string[];
+}
+
+// ==========================================
+// بخش 4: تایپ‌های ترکیبی
+// ==========================================
+
 export interface CategoryWithChildren extends CategoryRow {
   children: CategoryWithChildren[];
 }
 
-// خلاصه دسته‌بندی
 export interface CategorySummary {
   id: number;
   name: string;
   slug: string;
 }
 
-// محصول با اطلاعات خلاصه (برای کارت)
 export interface ProductListItem {
   id: number;
   name: string;
@@ -263,7 +347,6 @@ export interface ProductListItem {
   is_featured: number;
 }
 
-// محصول کامل (برای صفحه تک محصول)
 export interface ProductDetail {
   id: number;
   name: string;
@@ -278,7 +361,6 @@ export interface ProductDetail {
   latest_batch: BatchRow | null;
 }
 
-// موجودی یک واریانت در یک شعبه
 export interface VariantBranchStock {
   branch_id: number;
   branch_name: string;
@@ -291,22 +373,13 @@ export interface VariantBranchStock {
   available_units: number;
 }
 
-// ==========================================
-// بخش 4: تایپ‌های ترکیبی نظرات (جدید)
-// ==========================================
-
-// اطلاعات مشتری که نظر داده (برای نمایش در کارت نظر)
 export interface ReviewAuthor {
   id: number;
   full_name: string | null;
-  // حرف اول نام برای avatar
   initial: string;
 }
 
-// نظر کامل با همه اطلاعات برای نمایش در سایت
-// شامل: اطلاعات نظر + نویسنده + رسانه‌ها + آیا کاربر فعلی رای داده
 export interface ProductReviewWithDetails {
-  // اطلاعات نظر
   id: number;
   product_id: number;
   rating: number;
@@ -317,22 +390,14 @@ export interface ProductReviewWithDetails {
   admin_reply_at: Date | null;
   helpful_count: number;
   created_at: Date;
-
-  // اطلاعات نویسنده
   author: ReviewAuthor;
-
-  // رسانه‌ها
   media: ReviewMediaRow[];
-
-  // آیا کاربر فعلی به این نظر رای داده؟
   has_voted: boolean;
 }
 
-// آمار نظرات یک محصول
 export interface ProductReviewStats {
   total_count: number;
-  average_rating: number; // 0 اگر هیچ نظری نیست
-  // تعداد نظرات به تفکیک امتیاز (index 0 = 1 ستاره، index 4 = 5 ستاره)
+  average_rating: number;
   rating_distribution: {
     1: number;
     2: number;
@@ -340,13 +405,10 @@ export interface ProductReviewStats {
     4: number;
     5: number;
   };
-  // تعداد نظرات با عکس یا ویدیو
   with_media_count: number;
-  // تعداد نظرات خریداران تاییدشده
   verified_count: number;
 }
 
-// نظر در پنل ادمین (با اطلاعات بیشتر)
 export interface AdminReviewListItem {
   id: number;
   product_id: number;
