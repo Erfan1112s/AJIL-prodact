@@ -15,7 +15,7 @@ import {
   unapproveReviewAction,
   deleteReviewAction,
   replyToReviewAction,
-} from '@/app/admin/reviews/actions';
+} from '@/app/admin/(protected)/reviews/actions';
 import type { AdminReviewListItem } from '@/lib/types';
 
 interface Props {

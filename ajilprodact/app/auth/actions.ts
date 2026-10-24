@@ -12,14 +12,22 @@ import {
   getCurrentCustomerId,
 } from '@/lib/auth/customer-session';
 import { isValidIranMobile } from '@/lib/auth/sms';
+import {
+  syncCustomerToUsers,
+  updateCustomerLastLogin,
+} from '@/lib/auth/syuc-users';
 import type { CustomerRow } from '@/lib/types';
+
+// ==========================================
+// تایپ نتیجه
+// ==========================================
 
 type ActionResult<T = Record<string, never>> =
   | ({ ok: true } & T)
   | { ok: false; error: string; code?: string };
 
 // ==========================================
-// مرحله 1: درخواست OTP
+// مرحله 1: درخواست OTP ثبت‌نام
 // ==========================================
 
 export async function requestRegisterOtpAction(
@@ -31,17 +39,16 @@ export async function requestRegisterOtpAction(
     return { ok: false, error: 'شماره موبایل نامعتبر است' };
   }
 
-  const [existingRows] = await db.query<
-    Array<{ id: number; password_hash: string | null }>
-  >(
+  // چک: آیا این شماره قبلاً ثبت‌نام کرده؟
+  const existingRows = await queryRows<{
+    id: number;
+    password_hash: string | null;
+  }>(
     `SELECT id, password_hash FROM customers WHERE phone = ? LIMIT 1`,
     [phone]
   );
 
-  const existing = (existingRows as Array<{
-    id: number;
-    password_hash: string | null;
-  }>)[0];
+  const existing = existingRows[0];
 
   if (existing?.password_hash) {
     return {
@@ -51,7 +58,10 @@ export async function requestRegisterOtpAction(
     };
   }
 
-  const result = await requestOtp({ phone, createIfNotExists: true });
+  const result = await requestOtp({
+    phone,
+    createIfNotExists: true,
+  });
 
   if (!result.ok) {
     return { ok: false, error: result.error, code: result.code };
@@ -87,7 +97,7 @@ export async function verifyRegisterOtpAction(
 }
 
 // ==========================================
-// مرحله 3: تکمیل اطلاعات (بدون کد ملی)
+// مرحله 3: تکمیل اطلاعات
 // ==========================================
 
 export async function completeRegisterAction(
@@ -115,7 +125,7 @@ export async function completeRegisterAction(
   }
 
   // خواندن مشتری
-  const [rows] = await db.query<
+  const rows = await queryRows<
     Array<{
       id: number;
       password_hash: string | null;
@@ -127,11 +137,7 @@ export async function completeRegisterAction(
     [phone]
   );
 
-  const customer = (rows as Array<{
-    id: number;
-    password_hash: string | null;
-    otp_verified_at: Date | null;
-  }>)[0];
+  const customer = rows[0];
 
   if (!customer) {
     return {
@@ -182,11 +188,19 @@ export async function completeRegisterAction(
   // ساخت session
   await setCustomerSessionCookie(customer.id);
 
+  // همگام‌سازی با جدول users (موقت تا فاز 1.3)
+  try {
+    await syncCustomerToUsers(customer.id);
+  } catch (err) {
+    console.error('خطا در همگام‌سازی users:', err);
+    // حتی اگر sync خطا داد، ثبت‌نام موفقیت‌آمیز است
+  }
+
   return { ok: true };
 }
 
 // ==========================================
-// ورود
+// ورود با رمز
 // ==========================================
 
 export async function customerLoginAction(
@@ -201,14 +215,16 @@ export async function customerLoginAction(
     return { ok: false, error: genericError };
   }
 
-  const rows = await queryRows<CustomerRow>(
-    `SELECT id, password_hash, is_active FROM customers WHERE phone = ? LIMIT 1`,
+  const rows = await queryRows<CustomerRow[]>(
+    `SELECT id, password_hash, is_active
+     FROM customers WHERE phone = ? LIMIT 1`,
     [phone]
   );
 
   const customer = rows[0];
 
   if (!customer || !customer.password_hash) {
+    // جلوگیری از timing attack
     await verifyPassword(password, 'aa:bb');
     return { ok: false, error: genericError };
   }
@@ -223,6 +239,14 @@ export async function customerLoginAction(
   }
 
   await setCustomerSessionCookie(customer.id);
+
+  // به‌روزرسانی زمان آخرین ورود در users
+  try {
+    await updateCustomerLastLogin(customer.id, null);
+  } catch (err) {
+    console.error('خطا در به‌روزرسانی last_login:', err);
+  }
+
   return { ok: true };
 }
 
@@ -239,17 +263,14 @@ export async function requestResetOtpAction(
     return { ok: false, error: 'شماره موبایل نامعتبر است' };
   }
 
-  const [existingRows] = await db.query<
+  const existingRows = await queryRows<
     Array<{ id: number; password_hash: string | null }>
   >(
     `SELECT id, password_hash FROM customers WHERE phone = ? LIMIT 1`,
     [phone]
   );
 
-  const existing = (existingRows as Array<{
-    id: number;
-    password_hash: string | null;
-  }>)[0];
+  const existing = existingRows[0];
 
   if (!existing || !existing.password_hash) {
     return {
@@ -259,7 +280,10 @@ export async function requestResetOtpAction(
     };
   }
 
-  const result = await requestOtp({ phone, createIfNotExists: false });
+  const result = await requestOtp({
+    phone,
+    createIfNotExists: false,
+  });
 
   if (!result.ok) {
     return { ok: false, error: result.error, code: result.code };
@@ -303,6 +327,13 @@ export async function resetPasswordAction(
     [passwordHash, result.customerId]
   );
 
+  // همگام‌سازی رمز جدید با users
+  try {
+    await syncCustomerToUsers(result.customerId);
+  } catch (err) {
+    console.error('خطا در همگام‌سازی رمز با users:', err);
+  }
+
   return { ok: true };
 }
 
@@ -324,8 +355,8 @@ export async function getCurrentCustomerAction(): Promise<
   const id = await getCurrentCustomerId();
   if (!id) return { ok: false, error: 'وارد نشده‌اید' };
 
-  const rows = await queryRows<CustomerRow>(
-    `SELECT id, phone, full_name, email, default_address,
+  const rows = await queryRows<CustomerRow[]>(
+    `SELECT id, phone, national_code, full_name, email, default_address,
             order_count, last_order_at, is_active, created_at
      FROM customers WHERE id = ? AND is_active = 1 LIMIT 1`,
     [id]

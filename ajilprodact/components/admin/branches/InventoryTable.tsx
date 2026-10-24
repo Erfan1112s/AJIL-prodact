@@ -14,7 +14,7 @@ import {
   bulkUpdateProductStockAction,
   transferProductStockAction,
   resetBranchInventoryAction,
-} from '@/app/admin/branches/actions';
+} from '@/app/admin/(protected)/branches/actions';
 import { formatWeight } from '@/lib/utils';
 import type {
   BranchProductStock,

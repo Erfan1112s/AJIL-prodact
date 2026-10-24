@@ -12,7 +12,7 @@ import {
   saveBranchAction,
   generateBranchSlugAction,
   type BranchFormInput,
-} from '@/app/admin/branches/actions';
+} from '@/app/admin/(protected)/branches/actions';
 
 interface Props {
   initial?: {

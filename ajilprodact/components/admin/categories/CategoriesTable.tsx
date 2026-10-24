@@ -15,7 +15,7 @@ import {
 import {
   deleteCategoryAction,
   toggleCategoryActiveAction,
-} from '@/app/admin/categories/actions';
+} from '@/app/admin/(protected)/categories/actions';
 import type { AdminCategoryNode } from '@/lib/queries/categories-admin';
 
 interface Props {

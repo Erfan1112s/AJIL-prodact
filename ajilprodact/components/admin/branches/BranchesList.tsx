@@ -15,7 +15,7 @@ import {
 import {
   deleteBranchAction,
   toggleBranchActiveAction,
-} from '@/app/admin/branches/actions';
+} from '@/app/admin/(protected)/branches/actions';
 import type {
   AdminBranchItem,
   BranchesSummary,

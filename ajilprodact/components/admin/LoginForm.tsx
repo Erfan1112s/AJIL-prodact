@@ -5,7 +5,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { loginAction } from '@/app/admin/login/actions';
+import { loginAction } from '@/app/admin/(auth)/login/actions';
 
 interface Props {
   from?: string;
@@ -23,7 +23,6 @@ export default function LoginForm({ from }: Props) {
       const result = await loginAction(formData);
 
       if (result.ok) {
-        // موفق: به مسیر مقصد برو
         router.push(from ?? '/admin');
         router.refresh();
       } else {

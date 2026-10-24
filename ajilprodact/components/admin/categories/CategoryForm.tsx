@@ -12,7 +12,7 @@ import {
   saveCategoryAction,
   generateCategorySlugAction,
   type CategoryFormInput,
-} from '@/app/admin/categories/actions';
+} from '@/app/admin/(protected)/categories/actions';
 import type { CategoryRow } from '@/lib/types';
 import CategoryImageUploader from '@/components/admin/categories/CategoryImageUploader';
 

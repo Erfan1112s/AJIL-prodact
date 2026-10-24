@@ -6,7 +6,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Alert from '@/components/auth/Alert';
-import { saveTrackingCodeAction } from '@/app/admin/orders/actions';
+import { saveTrackingCodeAction } from '@/app/admin/(protected)/orders/actions';
 
 interface Props {
   orderNumber: string;

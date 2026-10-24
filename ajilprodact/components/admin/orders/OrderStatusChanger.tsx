@@ -6,7 +6,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Alert from '@/components/auth/Alert';
-import { changeOrderStatusAction } from '@/app/admin/orders/actions';
+import { changeOrderStatusAction } from '@/app/admin/(protected)/orders/actions';
 import type { OrderStatus } from '@/lib/types';
 
 interface Props {

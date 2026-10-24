@@ -1,24 +1,29 @@
-// app/admin/login/actions.ts
+// app/admin/(auth)/login/actions.ts
 // Server Action ورود ادمین
 
 'use server';
 
-import { db, queryRows, execute } from '@/lib/db';
+import { queryRows, execute } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth/password';
 import { setSessionCookie } from '@/lib/auth/session';
+import { updateStaffLastLogin } from '@/lib/auth/syuc-users';
 
-// تایپ خروجی
-type ActionResult =
-  | { ok: true }
-  | { ok: false; error: string };
+// ==========================================
+// تایپ‌ها
+// ==========================================
 
-// تایپ ردیف کاربر ادمین
+type ActionResult = { ok: true } | { ok: false; error: string };
+
 interface AdminUserRow {
   id: number;
   username: string;
   password_hash: string;
   is_active: number;
 }
+
+// ==========================================
+// Action: ورود ادمین
+// ==========================================
 
 export async function loginAction(formData: FormData): Promise<ActionResult> {
   // خواندن ورودی‌ها
@@ -35,7 +40,7 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
   }
 
   // گرفتن کاربر از دیتابیس
-  const rows = await queryRows<AdminUserRow>(
+  const rows = await queryRows<AdminUserRow[]>(
     `SELECT id, username, password_hash, is_active
      FROM admin_users
      WHERE username = ?
@@ -43,16 +48,13 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     [username]
   );
 
-  const list = rows;
-  const user = list[0];
+  const user = rows[0];
 
-  // پیام خطای یکسان برای همه حالات
-  // جلوگیری از افشای اطلاعات (کاربر وجود دارد یا نه)
+  // پیام خطای یکسان برای همه حالات (جلوگیری از افشای اطلاعات)
   const genericError = 'نام کاربری یا رمز عبور اشتباه است';
 
   if (!user) {
-    // برای جلوگیری از timing attack، یک هش انجام بده
-    // حتی وقتی کاربر وجود ندارد
+    // برای جلوگیری از timing attack، یک verify الکی انجام بده
     await verifyPassword(password, 'aa:bb');
     return { ok: false, error: genericError };
   }
@@ -67,14 +69,22 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     return { ok: false, error: genericError };
   }
 
-  // به‌روزرسانی last_login_at
-  await db.query(
+  // به‌روزرسانی last_login_at در admin_users
+  await execute(
     `UPDATE admin_users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?`,
     [user.id]
   );
 
-  // ست کردن کوکی session
+  // ساخت session (کوکی)
   await setSessionCookie(user.id);
+
+  // به‌روزرسانی زمان آخرین ورود در users (همگام‌سازی موقت)
+  try {
+    await updateStaffLastLogin(user.id, null);
+  } catch (err) {
+    console.error('خطا در به‌روزرسانی last_login ادمین:', err);
+    // حتی اگر sync خطا داد، ورود موفقیت‌آمیز است
+  }
 
   return { ok: true };
 }

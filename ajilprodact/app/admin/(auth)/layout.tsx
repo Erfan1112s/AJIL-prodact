@@ -1,5 +1,6 @@
-// app/admin/layout.tsx
-// لایوت پنل ادمین
+// app/admin/(protected)/layout.tsx
+// لایوت صفحات محافظت‌شده پنل ادمین
+// چک auth + سایدبار + هدر
 
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
@@ -15,20 +16,17 @@ interface AdminUserRow {
   is_active: number;
 }
 
-export default async function AdminLayout({
+export default async function AdminProtectedLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  // خواندن session ادمین
   const adminId = await getCurrentUserId();
 
-  // اگر لاگین نیست، به صفحه لاگین برو
   if (!adminId) {
     redirect('/admin/login');
   }
 
-  // خواندن اطلاعات ادمین
   const admins = await queryRows<AdminUserRow>(
     `SELECT id, username, full_name, is_active
      FROM admin_users
@@ -45,10 +43,8 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-cream-50">
-      {/* سایدبار سمت راست */}
       <AdminSidebar />
 
-      {/* محتوای اصلی - با فاصله از سایدبار در دسکتاپ */}
       <div className="lg:mr-64">
         <AdminHeader
           admin={{
