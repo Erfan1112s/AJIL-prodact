@@ -1,4 +1,4 @@
-// app/admin/customers/page.tsx
+// app/admin/(protected)/customers/page.tsx
 // لیست مشتریان
 
 import type { Metadata } from 'next';
@@ -7,7 +7,7 @@ import {
   getAdminCustomersCount,
   getCustomersSummary,
 } from '@/lib/queries/customers-admin';
-import CustomersTable from '@/app/admin/customers/CustomersTable';
+import CustomersTable from '@/components/admin/customers/CustomersTable';  // ← مسیر درست
 
 export const metadata: Metadata = {
   title: 'مشتریان',

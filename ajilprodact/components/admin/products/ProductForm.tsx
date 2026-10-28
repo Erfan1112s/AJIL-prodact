@@ -22,7 +22,7 @@ import {
   type VariantInput,
   type ImageInput,
   type BatchInput,
-} from '@/app/admin/products/actions';
+} from '@/app/admin/(protected)/products/actions';
 import type { CategorySummary } from '@/lib/types';
 
 interface Props {

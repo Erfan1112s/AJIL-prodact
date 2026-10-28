@@ -17,7 +17,7 @@ import { formatPrice } from '@/lib/utils';
 import {
   deleteProductAction,
   toggleProductActiveAction,
-} from '@/app/admin/products/actions';
+} from '@/app/admin/(protected)/products/actions';
 import type { AdminProductListItem } from '@/lib/queries/products-admin';
 import type { CategorySummary } from '@/lib/types';
 

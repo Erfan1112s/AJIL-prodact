@@ -11,8 +11,7 @@ import {
   LogoutIcon,
   UserIcon,
 } from '@/components/admin/icons';
-import { logoutAction } from '@/app/admin/actions';
-// نقشه‌برداری مسیر به عنوان
+import { logoutAction } from '@/app/admin/actions'; 
 const ROUTE_MAP: Record<string, string> = {
   '/admin': 'داشبورد',
   '/admin/products': 'محصولات',
@@ -152,7 +151,7 @@ export default function AdminHeader({ admin }: Props) {
 
               {/* خروج */}
               <div className="p-1 border-t border-coffee-100">
-                <form action={adminLogoutAction}>
+                <form action={logoutAction}>
                   <button
                     type="submit"
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"

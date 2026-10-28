@@ -4,7 +4,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { updateVariantPriceAction } from '@/app/admin/products/actions';
+import { updateVariantPriceAction } from '@/app/admin/(protected)/products/actions';
 import { formatPrice } from '@/lib/utils';
 import Alert from '@/components/auth/Alert';
 

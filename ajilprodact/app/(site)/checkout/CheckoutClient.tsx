@@ -12,7 +12,7 @@ import SubmitButton from '@/components/auth/SubmitButton';
 import { useCart } from '@/lib/cart/CartContext';
 import { PROVINCES, getCitiesOfProvince } from '@/lib/shipping/provinces';
 import { calculateShippingOptions } from '@/lib/shipping/calculator';
-import { submitOrderAction } from '@/app/checkout/actions';
+import { submitOrderAction } from '@/app/(site)/checkout/actions';
 import type { DeliveryMethod, ShippingProvider } from '@/lib/types';
 
 interface Props {
