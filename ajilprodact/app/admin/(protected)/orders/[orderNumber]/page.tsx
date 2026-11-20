@@ -327,21 +327,30 @@ export default async function AdminOrderDetailPage({ params }: Props) {
             </h3>
 
             <div className="space-y-2.5 text-sm">
-              {order.payment_method && (
+              {(order.payment_gateway || order.payment_method) && (
                 <InfoRow
                   label="روش پرداخت"
                   value={
-                    order.payment_method === 'zarinpal'
-                      ? 'زرین‌پال'
-                      : order.payment_method === 'zarinpal-mock'
+                    (order.payment_gateway ?? order.payment_method) === 'zarinpal'
+                      ? order.payment_method === 'zarinpal-mock'
                         ? 'زرین‌پال (آزمایشی)'
-                        : order.payment_method
+                        : 'زرین‌پال'
+                      : (order.payment_gateway ?? order.payment_method) === 'tikart'
+                        ? 'تیکارت'
+                        : order.payment_gateway ?? order.payment_method ?? '—'
                   }
+                />
+              )}
+              {order.payment_authority && (
+                <InfoRow
+                  label="شناسه پرداخت"
+                  value={order.payment_authority}
+                  ltr
                 />
               )}
               {order.payment_ref && (
                 <InfoRow
-                  label="کد پیگیری"
+                  label="شناسه تراکنش"
                   value={order.payment_ref}
                   ltr
                 />
@@ -351,6 +360,17 @@ export default async function AdminOrderDetailPage({ params }: Props) {
                   label="زمان تایید"
                   value={formatDateTime(order.payment_verified_at)}
                 />
+              )}
+              {order.payment_verified_by_admin === 1 && (
+                <>
+                  <InfoRow
+                    label="تاییدکننده"
+                    value={`مدیر شماره ${order.payment_verified_admin_id ?? '—'}`}
+                  />
+                  {order.payment_admin_note && (
+                    <InfoRow label="دلیل تایید" value={order.payment_admin_note} />
+                  )}
+                </>
               )}
               {!order.payment_ref && !order.payment_verified_at && (
                 <div className="text-xs text-coffee-500 text-center py-3">

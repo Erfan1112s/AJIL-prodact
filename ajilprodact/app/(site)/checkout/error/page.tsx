@@ -21,6 +21,9 @@ const REASONS: Record<string, string> = {
   missing_order: 'شماره سفارش یافت نشد.',
   order_not_found: 'سفارش مورد نظر یافت نشد.',
   payment_blocked: 'درگاه پرداخت در حال راه‌اندازی است.',
+  invalid_authority: 'اطلاعات پرداخت با سفارش مطابقت ندارد.',
+  order_not_pending: 'وضعیت سفارش اجازه تایید پرداخت را نمی‌دهد.',
+  unknown_gateway: 'درگاه پرداخت این سفارش قابل تایید نیست.',
 };
 
 export default async function CheckoutErrorPage({ searchParams }: Props) {

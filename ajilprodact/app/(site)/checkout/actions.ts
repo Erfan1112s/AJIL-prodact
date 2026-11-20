@@ -5,15 +5,16 @@
 
 import { queryRows, execute, transaction } from '@/lib/db';
 import { getCurrentCustomerId } from '@/lib/auth/customer-session';
-import { requestPayment, isMockMode } from '@/lib/payment/zarinpal';
 import { calculateShippingOptions } from '@/lib/shipping/calculator';
 import { generateOrderNumber } from '@/lib/utils';
+import type { ResultSetHeader } from 'mysql2/promise';
 import type {
   CustomerRow,
   ProductVariantRow,
   DeliveryMethod,
   ShippingProvider,
 } from '@/lib/types';
+import { getPaymentGateway } from '@/lib/payment';
 
 // ==========================================
 // تایپ‌های ورودی
@@ -53,16 +54,62 @@ export type SubmitOrderResult =
 // ==========================================
 
 function validateInput(input: CheckoutFormData): string | null {
+  if (!input || typeof input !== 'object') {
+    return 'اطلاعات سفارش نامعتبر است';
+  }
+  if (
+    typeof input.fullName !== 'string' ||
+    typeof input.phone !== 'string' ||
+    typeof input.email !== 'string' ||
+    typeof input.note !== 'string' ||
+    !Array.isArray(input.items)
+  ) {
+    return 'اطلاعات سفارش ناقص است';
+  }
+  if (input.items.length === 0 || input.items.length > 50) {
+    return input.items.length === 0 ? 'سبد خرید خالی است' : 'تعداد اقلام سفارش نامعتبر است';
+  }
+  if (
+    input.items.some(
+      (item) =>
+        !item ||
+        !Number.isSafeInteger(item.variantId) ||
+        item.variantId <= 0 ||
+        !Number.isSafeInteger(item.quantity) ||
+        item.quantity < 1 ||
+        item.quantity > 10
+    ) ||
+    new Set(input.items.map((item) => item.variantId)).size !== input.items.length
+  ) {
+    return 'تعداد یا شناسه یکی از محصولات نامعتبر است';
+  }
+
   if (!input.fullName || input.fullName.trim().length < 3) {
     return 'نام و نام خانوادگی را وارد کنید';
+  }
+  if (input.fullName.trim().length > 100) {
+    return 'نام و نام خانوادگی بیش از حد طولانی است';
   }
 
   if (!/^09\d{9}$/.test(input.phone)) {
     return 'شماره موبایل نامعتبر است';
   }
 
-  if (input.items.length === 0) {
-    return 'سبد خرید خالی است';
+  if (
+    input.deliveryMethod !== 'SHIPPING' &&
+    input.deliveryMethod !== 'PICKUP'
+  ) {
+    return 'روش تحویل نامعتبر است';
+  }
+
+  if (
+    input.email.length > 100 ||
+    (input.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email))
+  ) {
+    return 'نشانی ایمیل نامعتبر است';
+  }
+  if (input.note.trim().length > 1000) {
+    return 'یادداشت سفارش نمی‌تواند بیش از 1000 کاراکتر باشد';
   }
 
   if (input.deliveryMethod === 'SHIPPING') {
@@ -74,13 +121,16 @@ function validateInput(input: CheckoutFormData): string | null {
     if (!/^\d{10}$/.test(input.postalCode)) {
       return 'کد پستی باید 10 رقم باشد';
     }
-    if (input.shippingProvider === 'NONE') {
+    if (
+      input.shippingProvider !== 'SNAPP' &&
+      input.shippingProvider !== 'POST'
+    ) {
       return 'روش ارسال را انتخاب کنید';
     }
   }
 
   if (input.deliveryMethod === 'PICKUP') {
-    if (!input.branchId) {
+    if (!Number.isSafeInteger(input.branchId) || !input.branchId) {
       return 'شعبه مورد نظر را انتخاب کنید';
     }
   }
@@ -109,6 +159,47 @@ export async function submitOrderAction(
     return { ok: false, error: validationError, code: 'INVALID_INPUT' };
   }
 
+  let gateway: ReturnType<typeof getPaymentGateway>;
+  try {
+    gateway = getPaymentGateway();
+  } catch {
+    console.error('تنظیم درگاه پرداخت نامعتبر است');
+    return {
+      ok: false,
+      error: 'درگاه پرداخت به‌درستی پیکربندی نشده است.',
+      code: 'PAYMENT_CONFIG',
+    };
+  }
+
+  const configuredBaseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ??
+    (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000');
+  let baseUrl: URL;
+  try {
+    baseUrl = new URL(configuredBaseUrl);
+  } catch {
+    return {
+      ok: false,
+      error: 'نشانی بازگشت از پرداخت پیکربندی نشده است.',
+      code: 'PAYMENT_CONFIG',
+    };
+  }
+  if (
+    (baseUrl.protocol !== 'https:' &&
+      !(process.env.NODE_ENV !== 'production' && baseUrl.protocol === 'http:')) ||
+    baseUrl.username ||
+    baseUrl.password ||
+    baseUrl.pathname !== '/' ||
+    baseUrl.search ||
+    baseUrl.hash
+  ) {
+    return {
+      ok: false,
+      error: 'نشانی بازگشت از پرداخت نامعتبر است.',
+      code: 'PAYMENT_CONFIG',
+    };
+  }
+
   const customers = await queryRows<CustomerRow>(
     `SELECT id, phone, full_name FROM customers WHERE id = ? AND is_active = 1 LIMIT 1`,
     [customerId]
@@ -121,6 +212,20 @@ export async function submitOrderAction(
       error: 'حساب کاربری یافت نشد',
       code: 'CUSTOMER_NOT_FOUND',
     };
+  }
+
+  if (input.deliveryMethod === 'PICKUP') {
+    const activeBranches = await queryRows<{ id: number }>(
+      `SELECT id FROM branches WHERE id = ? AND is_active = 1 LIMIT 1`,
+      [input.branchId]
+    );
+    if (!activeBranches[0]) {
+      return {
+        ok: false,
+        error: 'شعبه انتخاب‌شده در دسترس نیست',
+        code: 'BRANCH_UNAVAILABLE',
+      };
+    }
   }
 
   const variantIds = input.items.map((item) => item.variantId);
@@ -179,7 +284,15 @@ export async function submitOrderAction(
     const variant = variants.find((entry) => entry.id === item.variantId);
     if (!variant) continue;
 
-    const quantity = Math.min(Math.max(1, item.quantity), 10);
+    if (!Number.isSafeInteger(variant.price) || variant.price <= 0) {
+      return {
+        ok: false,
+        error: `قیمت محصول «${variant.product_name}» نامعتبر است`,
+        code: 'INVALID_PRODUCT_PRICE',
+      };
+    }
+
+    const quantity = item.quantity;
     const lineTotal = variant.price * quantity;
 
     orderItems.push({
@@ -219,10 +332,9 @@ export async function submitOrderAction(
       };
     }
 
-    const selectedShippingOption =
-      shippingCalculation.options.find(
-        (option) => option.provider === input.shippingProvider
-      ) ?? shippingCalculation.options[0];
+    const selectedShippingOption = shippingCalculation.options.find(
+      (option) => option.provider === input.shippingProvider
+    );
 
     if (!selectedShippingOption) {
       return {
@@ -237,6 +349,13 @@ export async function submitOrderAction(
   }
 
   const totalAmount = subtotal + shippingCost;
+  if (!Number.isSafeInteger(totalAmount) || totalAmount < 1000) {
+    return {
+      ok: false,
+      error: 'مبلغ نهایی سفارش نامعتبر است',
+      code: 'INVALID_TOTAL',
+    };
+  }
   const orderNumber = generateOrderNumber();
 
   try {
@@ -247,8 +366,8 @@ export async function submitOrderAction(
           address, city, province, postal_code,
           subtotal, shipping_cost, total_amount,
           status, delivery_method, shipping_provider,
-          branch_id, note
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?, ? )`,
+          branch_id, note, payment_gateway
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?, ?, ?, ?)`,
         [
           orderNumber,
           customerId,
@@ -266,6 +385,7 @@ export async function submitOrderAction(
           shippingProvider,
           input.deliveryMethod === 'PICKUP' ? input.branchId : null,
           input.note.trim() || null,
+          gateway.name,
         ]
       );
 
@@ -290,7 +410,9 @@ export async function submitOrderAction(
       }
     });
   } catch (error) {
-    console.error('خطا در ثبت سفارش:', error);
+    console.error('خطا در ثبت سفارش:', {
+      errorName: error instanceof Error ? error.name : 'unknown',
+    });
     return {
       ok: false,
       error: 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.',
@@ -298,42 +420,73 @@ export async function submitOrderAction(
     };
   }
 
-  const callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/payment/verify?order=${orderNumber}`;
-
-  const paymentResult = await requestPayment({
+  const callbackUrl = new URL('/api/payment/verify', baseUrl);
+  callbackUrl.searchParams.set('order', orderNumber);
+  const paymentResult = await gateway.requestPayment({
     amount: totalAmount,
     description: `پرداخت سفارش ${orderNumber}`,
-    callbackUrl,
+    callbackUrl: callbackUrl.toString(),
     email: input.email.trim() || undefined,
     mobile: input.phone,
     orderId: orderNumber,
+    orderNumber,
   });
 
-  if (!paymentResult.ok) {
+  const paymentAuthority = paymentResult.authority;
+  const paymentUrl = paymentResult.redirectUrl;
+  if (!paymentResult.success || !paymentAuthority || !paymentUrl) {
     await execute(
-      `UPDATE orders SET status = 'CANCELLED' WHERE order_number = ?`,
+      `UPDATE orders SET status = 'CANCELLED'
+       WHERE order_number = ? AND status = 'PENDING'`,
       [orderNumber]
     );
 
     return {
       ok: false,
-      error: paymentResult.error,
-      code: paymentResult.code,
+      error: paymentResult.errorMessage ?? 'ایجاد پرداخت ناموفق بود.',
+      code: 'PAYMENT_REQUEST_FAILED',
     };
   }
 
-  await execute(
-    `UPDATE orders
-     SET payment_method = ?,
-         payment_authority = ?
-     WHERE order_number = ?`,
-    [isMockMode() ? 'zarinpal-mock' : 'zarinpal', paymentResult.authority, orderNumber]
-  );
+  let paymentStored: boolean;
+  try {
+    paymentStored = await transaction(async (conn) => {
+      const [result] = await conn.execute<ResultSetHeader>(
+        `UPDATE orders
+         SET payment_method = ?,
+             payment_authority = ?
+         WHERE order_number = ? AND status = 'PENDING'`,
+        [
+          paymentResult.isMock ? `${gateway.name}-mock` : gateway.name,
+          paymentAuthority,
+          orderNumber,
+        ]
+      );
+      return result.affectedRows === 1;
+    });
+  } catch (error) {
+    console.error('ذخیره اطلاعات پرداخت ناموفق بود:', {
+      orderNumber,
+      errorName: error instanceof Error ? error.name : 'unknown',
+    });
+    return {
+      ok: false,
+      error: 'در ثبت اطلاعات پرداخت خطایی رخ داد. برای پیگیری با پشتیبانی تماس بگیرید.',
+      code: 'PAYMENT_STORAGE_FAILED',
+    };
+  }
+  if (!paymentStored) {
+    return {
+      ok: false,
+      error: 'وضعیت سفارش تغییر کرده است و امکان ادامه پرداخت وجود ندارد.',
+      code: 'ORDER_STATE_CHANGED',
+    };
+  }
 
   return {
     ok: true,
     orderNumber,
-    paymentUrl: paymentResult.paymentUrl,
-    isMock: paymentResult.isMock,
+    paymentUrl,
+    isMock: paymentResult.isMock ?? false,
   };
 }

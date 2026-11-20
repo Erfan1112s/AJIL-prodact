@@ -9,6 +9,7 @@ import { queryRows } from '@/lib/db';
 import Container from '@/components/Container';
 import CheckoutClient from '@/components/checkout/CheckoutClient';
 import type { CustomerRow, BranchRow } from '@/lib/types';
+import { isPaymentBlocked } from '@/lib/payment/zarinpal';
 
 export const metadata: Metadata = {
   title: 'تسویه حساب',
@@ -38,6 +39,9 @@ export default async function CheckoutPage() {
             is_active, created_at, updated_at
      FROM branches WHERE is_active = 1 ORDER BY name ASC`
   );
+  const paymentGateway = (process.env.PAYMENT_GATEWAY ?? 'zarinpal').toLowerCase();
+  const paymentEnabled =
+    paymentGateway === 'zarinpal' && !isPaymentBlocked().blocked;
 
   return (
     <main className="min-h-screen">
@@ -68,6 +72,8 @@ export default async function CheckoutPage() {
 
       <Container className="py-8 pb-16">
         <CheckoutClient
+          paymentGateway={paymentGateway}
+          paymentEnabled={paymentEnabled}
           customer={{
             phone: customer.phone,
             fullName: customer.full_name ?? '',

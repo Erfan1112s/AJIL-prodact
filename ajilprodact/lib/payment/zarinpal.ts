@@ -56,6 +56,13 @@ const ZARINPAL_SANDBOX_URL = 'https://sandbox.zarinpal.com/pg';
 const ZARINPAL_PROD_API = 'https://api.zarinpal.com/pg/v4/payment';
 const ZARINPAL_SANDBOX_API = 'https://sandbox.zarinpal.com/pg/v4/payment';
 
+function toRials(amountToman: number): number | null {
+  if (!Number.isSafeInteger(amountToman) || amountToman < 1000) return null;
+
+  const amountRial = amountToman * 10;
+  return Number.isSafeInteger(amountRial) ? amountRial : null;
+}
+
 // ==========================================
 // تنظیمات
 // ==========================================
@@ -74,7 +81,7 @@ function getConfig(): Config {
   const merchantId = process.env.ZARINPAL_MERCHANT_ID ?? '';
   const isSandbox = process.env.ZARINPAL_SANDBOX === 'true';
   const isProduction = process.env.NODE_ENV === 'production';
-  const hasMerchant = merchantId.length >= 30;
+  const hasMerchant = merchantId.length === 36;
 
   let isMock = false;
   let isBlocked = false;
@@ -124,6 +131,7 @@ export async function requestPayment(
   params: PaymentRequestParams
 ): Promise<PaymentRequestResult | PaymentRequestError> {
   const config = getConfig();
+  const amountRial = toRials(params.amount);
 
   // اگر مسدود است، اجازه نده
   if (config.isBlocked) {
@@ -135,7 +143,7 @@ export async function requestPayment(
   }
 
   // اعتبارسنجی مبلغ
-  if (!Number.isInteger(params.amount) || params.amount < 1000) {
+  if (amountRial === null) {
     return {
       ok: false,
       error: 'مبلغ پرداخت نامعتبر است (حداقل 1000 تومان)',
@@ -178,7 +186,7 @@ export async function requestPayment(
       },
       body: JSON.stringify({
         merchant_id: config.merchantId,
-        amount: params.amount,
+        amount: amountRial,
         description: params.description,
         callback_url: params.callbackUrl,
         metadata: {
@@ -206,7 +214,11 @@ export async function requestPayment(
     const authority = data.data?.authority;
     const code = data.data?.code;
 
-    if (code !== 100 || !authority) {
+    if (
+      code !== 100 ||
+      typeof authority !== 'string' ||
+      !/^A[A-Za-z0-9-]{35}$/.test(authority)
+    ) {
       return {
         ok: false,
         error: 'زرین‌پال درخواست را رد کرد',
@@ -244,6 +256,7 @@ export async function verifyPayment(
   params: PaymentVerifyParams
 ): Promise<PaymentVerifyResult | PaymentVerifyError> {
   const config = getConfig();
+  const amountRial = toRials(params.amount);
 
   if (config.isBlocked) {
     return {
@@ -261,7 +274,7 @@ export async function verifyPayment(
     };
   }
 
-  if (!Number.isInteger(params.amount) || params.amount < 1000) {
+  if (amountRial === null) {
     return {
       ok: false,
       error: 'مبلغ تایید نامعتبر است',
@@ -297,7 +310,7 @@ export async function verifyPayment(
       },
       body: JSON.stringify({
         merchant_id: config.merchantId,
-        amount: params.amount,
+        amount: amountRial,
         authority: params.authority,
       }),
       signal: AbortSignal.timeout(20_000),
@@ -322,7 +335,12 @@ export async function verifyPayment(
     const code = data.data?.code;
     const refId = data.data?.ref_id;
 
-    if (code === 100 || code === 101) {
+    if (
+      (code === 100 || code === 101) &&
+      typeof refId === 'number' &&
+      Number.isSafeInteger(refId) &&
+      refId > 0
+    ) {
       return {
         ok: true,
         refId: String(refId ?? ''),

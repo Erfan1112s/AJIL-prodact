@@ -21,7 +21,10 @@ export async function getCustomerOrders(
             customer_email, address, city, province, postal_code,
             subtotal, shipping_cost, total_amount,
             status, delivery_method, shipping_provider,
-            payment_method, payment_ref, payment_authority, payment_verified_at,
+            payment_method, payment_ref, payment_authority, payment_gateway,
+            payment_receipt_url, payment_verified_at,
+            payment_verified_by_admin, payment_verified_admin_id,
+            payment_admin_note,
             branch_id, tracking_code, note,
             created_at, updated_at
      FROM orders
@@ -60,7 +63,10 @@ export async function getCustomerOrderByNumber(
             customer_email, address, city, province, postal_code,
             subtotal, shipping_cost, total_amount,
             status, delivery_method, shipping_provider,
-            payment_method, payment_ref, payment_authority, payment_verified_at,
+            payment_method, payment_ref, payment_authority, payment_gateway,
+            payment_receipt_url, payment_verified_at,
+            payment_verified_by_admin, payment_verified_admin_id,
+            payment_admin_note,
             branch_id, tracking_code, note,
             created_at, updated_at
      FROM orders

@@ -167,7 +167,12 @@ export interface OrderRow {
   payment_method: string | null;
   payment_ref: string | null;
   payment_authority: string | null;
+  payment_gateway: string | null;
+  payment_receipt_url: string | null;
   payment_verified_at: Date | null;
+  payment_verified_by_admin: number;
+  payment_verified_admin_id: number | null;
+  payment_admin_note: string | null;
   branch_id: number | null;
   tracking_code: string | null;
   note: string | null;

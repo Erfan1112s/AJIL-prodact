@@ -24,6 +24,7 @@ interface Props {
   currentSearch: string;
   currentStatus: OrderStatus | 'ALL';
   currentDelivery: DeliveryMethod | 'ALL';
+  currentGateway: 'zarinpal' | 'tikart' | 'manual' | 'ALL';
   currentFromDate: string;
   currentToDate: string;
 }
@@ -51,6 +52,7 @@ export default function OrdersTable({
   currentSearch,
   currentStatus,
   currentDelivery,
+  currentGateway,
   currentFromDate,
   currentToDate,
 }: Props) {
@@ -60,7 +62,12 @@ export default function OrdersTable({
 
   const [search, setSearch] = useState(currentSearch);
   const [showAdvanced, setShowAdvanced] = useState(
-    Boolean(currentFromDate || currentToDate || currentDelivery !== 'ALL')
+    Boolean(
+      currentFromDate ||
+        currentToDate ||
+        currentDelivery !== 'ALL' ||
+        currentGateway !== 'ALL'
+    )
   );
 
   function updateFilters(updates: Record<string, string | null>) {
@@ -95,6 +102,7 @@ export default function OrdersTable({
     currentSearch ||
     currentStatus !== 'ALL' ||
     currentDelivery !== 'ALL' ||
+    currentGateway !== 'ALL' ||
     currentFromDate ||
     currentToDate;
 
@@ -179,7 +187,7 @@ export default function OrdersTable({
 
         {/* فیلترهای پیشرفته */}
         {showAdvanced && (
-          <div className="pt-3 border-t border-coffee-100 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-in">
+          <div className="pt-3 border-t border-coffee-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-fade-in">
             <div>
               <label className="block text-[11px] text-coffee-500 mb-1.5">
                 روش تحویل
@@ -197,6 +205,26 @@ export default function OrdersTable({
                 <option value="ALL">همه</option>
                 <option value="SHIPPING">ارسال به آدرس</option>
                 <option value="PICKUP">تحویل حضوری</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-coffee-500 mb-1.5">
+                درگاه پرداخت
+              </label>
+              <select
+                value={currentGateway}
+                onChange={(e) =>
+                  updateFilters({
+                    gateway: e.target.value === 'ALL' ? null : e.target.value,
+                  })
+                }
+                className="w-full px-3 py-2 rounded-xl border border-coffee-200 bg-cream-50 text-sm outline-none focus:border-gold-500"
+              >
+                <option value="ALL">همه درگاه‌ها</option>
+                <option value="zarinpal">زرین‌پال</option>
+                <option value="tikart">تیکارت</option>
+                <option value="manual">کارت‌به‌کارت دستی</option>
               </select>
             </div>
 
@@ -309,6 +337,9 @@ export default function OrdersTable({
                     تحویل
                   </th>
                   <th className="text-right px-4 py-3 font-medium text-xs text-coffee-600">
+                    پرداخت
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium text-xs text-coffee-600">
                     وضعیت
                   </th>
                   <th className="text-right px-4 py-3 font-medium text-xs text-coffee-600">
@@ -368,6 +399,20 @@ export default function OrdersTable({
                               : 'ارسال'}
                         </span>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-coffee-700">
+                      {(order.payment_gateway ?? order.payment_method) === 'zarinpal'
+                        ? 'زرین‌پال'
+                        : (order.payment_gateway ?? order.payment_method) ===
+                            'zarinpal-mock'
+                          ? 'زرین‌پال (آزمایشی)'
+                          : (order.payment_gateway ?? order.payment_method) ===
+                              'tikart'
+                            ? 'تیکارت'
+                            : (order.payment_gateway ?? order.payment_method) ===
+                                'manual'
+                              ? 'کارت‌به‌کارت دستی'
+                              : '—'}
                     </td>
                     <td className="px-4 py-3">
                       <OrderStatusBadge status={order.status} size="sm" />

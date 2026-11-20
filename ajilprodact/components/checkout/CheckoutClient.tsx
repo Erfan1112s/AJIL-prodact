@@ -15,6 +15,8 @@ import { submitOrderAction } from '@/app/(site)/checkout/actions';
 import type { DeliveryMethod, ShippingProvider } from '@/lib/types';
 
 interface Props {
+  paymentGateway: string;
+  paymentEnabled: boolean;
   customer: {
     phone: string;
     fullName: string;
@@ -33,7 +35,12 @@ function formatPrice(price: number): string {
   return price.toLocaleString('fa-IR');
 }
 
-export default function CheckoutClient({ customer, branches }: Props) {
+export default function CheckoutClient({
+  paymentGateway,
+  paymentEnabled,
+  customer,
+  branches,
+}: Props) {
   const { items, totalPrice, hydrated } = useCart();
   const [isPending, startTransition] = useTransition();
 
@@ -573,7 +580,22 @@ export default function CheckoutClient({ customer, branches }: Props) {
             </div>
           </div>
 
-          <SubmitButton loading={isPending}>
+          <div className="rounded-xl border border-coffee-100 bg-cream-50 p-3 mb-4 text-right">
+            <div className="text-sm font-bold text-coffee-900">
+              {paymentGateway === 'zarinpal'
+                ? 'پرداخت آنلاین با زرین‌پال'
+                : paymentGateway === 'tikart'
+                  ? 'پرداخت کارت‌به‌کارت با تیکارت'
+                  : 'درگاه پرداخت در دسترس نیست'}
+            </div>
+            <p className="text-xs text-coffee-500 leading-5 mt-1">
+              {paymentEnabled
+                ? 'پس از ثبت سفارش، به صفحه پرداخت منتقل می‌شوید. سفارش پس از تایید پرداخت، نهایی خواهد شد.'
+                : 'این روش پرداخت تا زمان تکمیل پیکربندی و تایید فنی در دسترس نیست.'}
+            </p>
+          </div>
+
+          <SubmitButton loading={isPending} disabled={!paymentEnabled}>
             پرداخت و ثبت سفارش
           </SubmitButton>
 

@@ -33,6 +33,7 @@ interface Props {
     search?: string;
     status?: string;
     delivery?: string;
+    gateway?: string;
     from?: string;
     to?: string;
     page?: string;
@@ -52,6 +53,12 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
     params.delivery === 'SHIPPING' || params.delivery === 'PICKUP'
       ? (params.delivery as DeliveryMethod)
       : 'ALL';
+  const paymentGateway: 'zarinpal' | 'tikart' | 'manual' | 'ALL' =
+    params.gateway === 'zarinpal' ||
+    params.gateway === 'tikart' ||
+    params.gateway === 'manual'
+      ? params.gateway
+      : 'ALL';
   const fromDate = params.from ?? '';
   const toDate = params.to ?? '';
 
@@ -63,6 +70,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       search,
       status,
       deliveryMethod: delivery,
+      paymentGateway,
       fromDate,
       toDate,
       limit: PER_PAGE,
@@ -72,6 +80,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       search,
       status,
       deliveryMethod: delivery,
+      paymentGateway,
       fromDate,
       toDate,
     }),
@@ -90,6 +99,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
       currentSearch={search}
       currentStatus={status}
       currentDelivery={delivery}
+      currentGateway={paymentGateway}
       currentFromDate={fromDate}
       currentToDate={toDate}
     />

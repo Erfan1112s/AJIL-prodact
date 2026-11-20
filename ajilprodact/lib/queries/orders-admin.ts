@@ -22,6 +22,8 @@ export interface AdminOrderListItem {
   status: OrderStatus;
   delivery_method: DeliveryMethod;
   shipping_provider: string;
+  payment_gateway: string | null;
+  payment_method: string | null;
   items_count: number;
   created_at: Date;
 }
@@ -30,6 +32,7 @@ export interface GetAdminOrdersOptions {
   search?: string;
   status?: OrderStatus | 'ALL';
   deliveryMethod?: DeliveryMethod | 'ALL';
+  paymentGateway?: 'zarinpal' | 'tikart' | 'manual' | 'ALL';
   fromDate?: string; // YYYY-MM-DD
   toDate?: string;
   limit?: number;
@@ -43,6 +46,7 @@ export async function getAdminOrders(
     search,
     status = 'ALL',
     deliveryMethod = 'ALL',
+    paymentGateway = 'ALL',
     fromDate,
     toDate,
     limit = 20,
@@ -70,6 +74,19 @@ export async function getAdminOrders(
     params.push(deliveryMethod);
   }
 
+  if (paymentGateway !== 'ALL') {
+    const legacyMethods =
+      paymentGateway === 'zarinpal'
+        ? ['zarinpal', 'zarinpal-mock']
+        : [paymentGateway];
+    conditions.push(
+      `(o.payment_gateway = ? OR (o.payment_gateway IS NULL AND o.payment_method IN (${legacyMethods
+        .map(() => '?')
+        .join(',')})))`
+    );
+    params.push(paymentGateway, ...legacyMethods);
+  }
+
   if (fromDate) {
     conditions.push('DATE(o.created_at) >= ?');
     params.push(fromDate);
@@ -88,6 +105,7 @@ export async function getAdminOrders(
     `SELECT
        o.id, o.order_number, o.customer_name, o.customer_phone,
        o.total_amount, o.status, o.delivery_method, o.shipping_provider,
+       o.payment_gateway, o.payment_method,
        o.created_at,
        (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS items_count
      FROM orders o
@@ -107,6 +125,7 @@ export async function getAdminOrdersCount(
     search,
     status = 'ALL',
     deliveryMethod = 'ALL',
+    paymentGateway = 'ALL',
     fromDate,
     toDate,
   } = options;
@@ -130,6 +149,19 @@ export async function getAdminOrdersCount(
   if (deliveryMethod !== 'ALL') {
     conditions.push('delivery_method = ?');
     params.push(deliveryMethod);
+  }
+
+  if (paymentGateway !== 'ALL') {
+    const legacyMethods =
+      paymentGateway === 'zarinpal'
+        ? ['zarinpal', 'zarinpal-mock']
+        : [paymentGateway];
+    conditions.push(
+      `(payment_gateway = ? OR (payment_gateway IS NULL AND payment_method IN (${legacyMethods
+        .map(() => '?')
+        .join(',')})))`
+    );
+    params.push(paymentGateway, ...legacyMethods);
   }
 
   if (fromDate) {

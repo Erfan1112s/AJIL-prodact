@@ -8,15 +8,6 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   productionBrowserSourceMaps: false,
 
-  // ⬇⬇⬇ این دو خط اضافه شود ⬇⬇⬇
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  // ⬆⬆⬆ پایان ⬆⬆⬆
-
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },

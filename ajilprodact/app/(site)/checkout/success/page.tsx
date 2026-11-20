@@ -36,23 +36,29 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
   if (!order) {
     redirect('/');
   }
+  const isPaid = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'].includes(
+    order.status
+  );
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-50/60 to-cream-50">
       <Container className="py-16">
         <div className="max-w-xl mx-auto text-center">
           {/* آیکون موفقیت */}
-          <div className="w-20 h-20 rounded-full bg-brand-500 text-white mx-auto flex items-center justify-center mb-6 shadow-lg shadow-brand-500/30">
+          <div className={`w-20 h-20 rounded-full ${isPaid ? 'bg-brand-500 shadow-brand-500/30' : 'bg-amber-500 shadow-amber-500/30'} text-white mx-auto flex items-center justify-center mb-6 shadow-lg`}>
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 13l4 4L19 7" />
+              {isPaid ? <path d="M5 13l4 4L19 7" /> : <path d="M12 8v4l2 2" />}
+              {!isPaid && <circle cx="12" cy="12" r="9" />}
             </svg>
           </div>
 
           <h1 className="text-2xl font-bold text-coffee-900 mb-2">
-            پرداخت با موفقیت انجام شد
+            {isPaid ? 'پرداخت با موفقیت تایید شد' : 'پرداخت در انتظار تایید است'}
           </h1>
           <p className="text-coffee-500 text-sm mb-8">
-            سفارش شما ثبت شد و به‌زودی برای آماده‌سازی ارسال خواهد شد.
+            {isPaid
+              ? 'سفارش شما ثبت شد و به‌زودی برای آماده‌سازی ارسال خواهد شد.'
+              : 'پس از تایید پرداخت، وضعیت سفارش شما به‌روزرسانی می‌شود.'}
           </p>
 
           {/* کارت اطلاعات */}
@@ -101,9 +107,6 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
             </Link>
           </div>
 
-          <div className="mt-8 text-xs text-coffee-400">
-            پیامک تایید سفارش به شماره شما ارسال شد.
-          </div>
         </div>
       </Container>
     </main>
