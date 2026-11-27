@@ -4,7 +4,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { execute, queryRows } from '@/lib/db';
+import type { ResultSetHeader } from 'mysql2';
+import { db, execute, queryRows } from '@/lib/db';
 import { getCurrentUserId } from '@/lib/auth/session';
 
 // ==========================================
@@ -142,16 +143,7 @@ export async function saveCategoryAction(
       categoryId = input.id;
     } else {
       // ایجاد
-      const result = await queryRows<{ id: number }>(
-        `SELECT 1 AS id` // placeholder برای گرفتن insertId
-      );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const [insertResult] = (await import('@/lib/db')).db
-        ? []
-        : [];
-      // استفاده از execute برای insert
-      const { db: dbConn } = await import('@/lib/db');
-      const [rawResult] = await dbConn.query(
+      const [insertResult] = await db.query<ResultSetHeader>(
         `INSERT INTO categories
            (name, slug, description, image_url, parent_id, sort_order, is_active)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -165,10 +157,7 @@ export async function saveCategoryAction(
           input.is_active ? 1 : 0,
         ]
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      categoryId = (rawResult as any).insertId as number;
-      void result;
-      void insertResult;
+      categoryId = insertResult.insertId;
     }
 
     revalidatePath('/admin/categories');

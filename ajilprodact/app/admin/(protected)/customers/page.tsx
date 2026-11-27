@@ -7,7 +7,7 @@ import {
   getAdminCustomersCount,
   getCustomersSummary,
 } from '@/lib/queries/customers-admin';
-import CustomersTable from '@/components/admin/customers/CustomersTable';  // ← مسیر درست
+import CustomersTable from '@/components/admin/customers/CustomersTable';
 
 export const metadata: Metadata = {
   title: 'مشتریان',

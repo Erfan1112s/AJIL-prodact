@@ -40,7 +40,7 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
   }
 
   // گرفتن کاربر از دیتابیس
-  const rows = await queryRows<AdminUserRow[]>(
+  const rows = await queryRows<AdminUserRow>(
     `SELECT id, username, password_hash, is_active
      FROM admin_users
      WHERE username = ?

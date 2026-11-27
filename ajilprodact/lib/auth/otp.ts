@@ -66,13 +66,11 @@ export async function requestOtp(
   }
 
   // 2. چک وجود کاربر
-  const [existingRows] = await db.query<
-    Array<{
-      id: number;
-      otp_last_sent_at: Date | null;
-      is_active: number;
-    }>
-  >(
+  const existingRows = await queryRows<{
+    id: number;
+    otp_last_sent_at: Date | null;
+    is_active: number;
+  }>(
     `SELECT id, otp_last_sent_at, is_active
      FROM customers
      WHERE phone = ?
@@ -80,11 +78,7 @@ export async function requestOtp(
     [phone]
   );
 
-  const existing = (existingRows as Array<{
-    id: number;
-    otp_last_sent_at: Date | null;
-    is_active: number;
-  }>)[0];
+  const existing = existingRows[0];
 
   // اگر کاربر وجود ندارد و مجاز به ساخت نیستیم
   if (!existing && !createIfNotExists) {
@@ -201,14 +195,12 @@ export async function verifyOtp(
   }
 
   // خواندن کاربر و کد فعال
-  const [rows] = await db.query<
-    Array<{
-      id: number;
-      otp_code: string | null;
-      otp_expires_at: Date | null;
-      otp_attempts: number;
-    }>
-  >(
+  const rows = await queryRows<{
+    id: number;
+    otp_code: string | null;
+    otp_expires_at: Date | null;
+    otp_attempts: number;
+  }>(
     `SELECT id, otp_code, otp_expires_at, otp_attempts
      FROM customers
      WHERE phone = ?
@@ -216,12 +208,7 @@ export async function verifyOtp(
     [phone]
   );
 
-  const customer = (rows as Array<{
-    id: number;
-    otp_code: string | null;
-    otp_expires_at: Date | null;
-    otp_attempts: number;
-  }>)[0];
+  const customer = rows[0];
 
   if (!customer) {
     return { ok: false, error: 'حسابی یافت نشد', code: 'NOT_FOUND' };

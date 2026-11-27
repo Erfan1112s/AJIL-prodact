@@ -22,7 +22,7 @@ import type { CustomerRow } from '@/lib/types';
 // تایپ نتیجه
 // ==========================================
 
-type ActionResult<T = Record<string, never>> =
+type ActionResult<T = Record<string, unknown>> =
   | ({ ok: true } & T)
   | { ok: false; error: string; code?: string };
 
@@ -125,13 +125,11 @@ export async function completeRegisterAction(
   }
 
   // خواندن مشتری
-  const rows = await queryRows<
-    Array<{
-      id: number;
-      password_hash: string | null;
-      otp_verified_at: Date | null;
-    }>
-  >(
+  const rows = await queryRows<{
+    id: number;
+    password_hash: string | null;
+    otp_verified_at: Date | null;
+  }>(
     `SELECT id, password_hash, otp_verified_at
      FROM customers WHERE phone = ? LIMIT 1`,
     [phone]
@@ -215,7 +213,7 @@ export async function customerLoginAction(
     return { ok: false, error: genericError };
   }
 
-  const rows = await queryRows<CustomerRow[]>(
+  const rows = await queryRows<CustomerRow>(
     `SELECT id, password_hash, is_active
      FROM customers WHERE phone = ? LIMIT 1`,
     [phone]
@@ -263,9 +261,10 @@ export async function requestResetOtpAction(
     return { ok: false, error: 'شماره موبایل نامعتبر است' };
   }
 
-  const existingRows = await queryRows<
-    Array<{ id: number; password_hash: string | null }>
-  >(
+  const existingRows = await queryRows<{
+    id: number;
+    password_hash: string | null;
+  }>(
     `SELECT id, password_hash FROM customers WHERE phone = ? LIMIT 1`,
     [phone]
   );
@@ -355,7 +354,7 @@ export async function getCurrentCustomerAction(): Promise<
   const id = await getCurrentCustomerId();
   if (!id) return { ok: false, error: 'وارد نشده‌اید' };
 
-  const rows = await queryRows<CustomerRow[]>(
+  const rows = await queryRows<CustomerRow>(
     `SELECT id, phone, national_code, full_name, email, default_address,
             order_count, last_order_at, is_active, created_at
      FROM customers WHERE id = ? AND is_active = 1 LIMIT 1`,

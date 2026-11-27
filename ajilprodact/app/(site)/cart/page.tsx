@@ -6,6 +6,8 @@ import Link from 'next/link';
 import Container from '@/components/Container';
 import CartClient from '@/components/CartClient';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'سبد خرید',
   description: 'مشاهده و ویرایش سبد خرید',

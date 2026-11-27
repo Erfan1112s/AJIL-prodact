@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { getCategoryTree } from '@/lib/queries/categories';
 import { CartIcon, PhoneIcon } from '@/components/icons';
 import MobileMenu from '@/components/MobileMenu';
-import CartCountBadge from '@/components/cartcountbadge';
+import CartCountBadge from '@/components/CartCountBadge';
 import CustomerMenuButton from '@/components/CustomerMenuButton';
 
 export default async function Header() {

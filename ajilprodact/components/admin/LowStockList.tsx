@@ -69,13 +69,12 @@ export default function LowStockList({ products }: Props) {
       ) : (
         <div className="divide-y divide-coffee-100">
           {products.map((product) => {
-            const stock = Number(product.stock_total);
+            const stock = Number(product.available_weight_grams);
             const isCritical = stock <= 0;
-            const isLow = stock > 0 && stock < 5;
 
             return (
               <Link
-                key={product.variant_id}
+                key={product.product_id}
                 href={`/admin/products/${product.product_id}/edit`}
                 className="flex items-center gap-3 px-5 py-3.5 hover:bg-cream-50 transition-colors"
               >
@@ -92,7 +91,7 @@ export default function LowStockList({ products }: Props) {
                     {product.product_name}
                   </div>
                   <div className="text-[11px] text-coffee-500 fa-num">
-                    {product.weight_gram.toLocaleString('fa-IR')} گرم
+                    {product.variants_count.toLocaleString('fa-IR')} تنوع بسته‌بندی
                   </div>
                 </div>
 
@@ -106,7 +105,7 @@ export default function LowStockList({ products }: Props) {
                 >
                   {isCritical
                     ? 'ناموجود'
-                    : `${stock.toLocaleString('fa-IR')} عدد`}
+                    : `${stock.toLocaleString('fa-IR')} گرم موجود`}
                 </div>
               </Link>
             );

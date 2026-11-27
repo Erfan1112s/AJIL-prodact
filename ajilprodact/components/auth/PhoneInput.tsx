@@ -10,7 +10,7 @@ interface Props {
   onChange: (value: string) => void;
   disabled?: boolean;
   autoFocus?: boolean;
-  error?: string;
+  error?: string | null;
 }
 
 export default function PhoneInput({

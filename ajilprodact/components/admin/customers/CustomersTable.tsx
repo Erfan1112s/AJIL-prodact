@@ -2,18 +2,10 @@
 // حداقل نسخه — قابل توسعه
 
 import Link from 'next/link';
-
-interface CustomerRow {
-  id: number;
-  full_name: string | null;
-  phone: string;
-  created_at: string;
-  orders_count?: number;
-  total_spent?: number;
-}
+import type { AdminCustomerListItem } from '@/lib/queries/customers-admin';
 
 interface Props {
-  customers: CustomerRow[];
+  customers: AdminCustomerListItem[];
   summary: unknown;
   totalCount: number;
   currentPage: number;
